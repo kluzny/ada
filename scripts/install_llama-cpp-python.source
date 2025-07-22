@@ -1,0 +1,6 @@
+# make sure to source this to simplify usage under uv venv
+#
+# Dependencies:
+#   sudo apt install -y nvidia-cuda-toolkit
+#
+CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --verbose

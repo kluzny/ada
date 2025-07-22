@@ -1,0 +1,4 @@
+activate
+__pycache__
+models
+config.json
