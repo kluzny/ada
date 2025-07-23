@@ -1,8 +1,10 @@
-from ada.agent import Agent
+from ada import Agent
+
 
 def test_agent():
-  Agent()
+    Agent()
+
 
 def test_agent_say():
-  agent = Agent()
-  agent.say("Hello World!")
+    agent = Agent()
+    agent.say("Hello World!")

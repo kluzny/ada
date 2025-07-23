@@ -1,3 +1,24 @@
+[project]
+name = "ada"
+version = "0.0.1"
+authors = [
+    {name = "Kyle Luzny"},
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "llama-cpp-python>=0.3.14",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "ruff>=0.12.4",
+]
+
+[tool.setuptools]
+packages = ["ada"]
+
 [tool.pytest.ini_options]
 pythonpath = [
   "."

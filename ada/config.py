@@ -1,24 +1,25 @@
 import json
 
+
 class Config:
-  CONFIG_PATH = "config.json"
+    CONFIG_PATH = "config.json"
 
-  loaded = None
+    loaded = None
 
-  def __init__(self):
-    self.loaded = self.load(self.CONFIG_PATH)
+    def __init__(self):
+        self.loaded = self.load(self.CONFIG_PATH)
 
-  def load(self, path: str):
-    with open(path, "r") as f:
-        return json.load(f)
+    def load(self, path: str):
+        with open(path, "r") as f:
+            return json.load(f)
 
-  def model_url(self) -> str:
-    return self.loaded["model_url"]
+    def model_url(self) -> str:
+        return self.loaded["model_url"]
 
 
 if __name__ == "__main__":
-   config = Config()
+    config = Config()
 
-   print(f"CONFIG_PATH: {config.CONFIG_PATH}")
-   print("Loaded:")
-   print(json.dumps(config.loaded, indent=4))
+    print(f"CONFIG_PATH: {config.CONFIG_PATH}")
+    print("Loaded:")
+    print(json.dumps(config.loaded, indent=4))
