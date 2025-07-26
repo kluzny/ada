@@ -1,6 +1,10 @@
 import os
 import urllib.request
 
+from ada.logger import build_logger
+
+logger = build_logger(__name__)
+
 
 class Model:
     CACHE_DIR = "models"
@@ -12,7 +16,7 @@ class Model:
     def __init__(self, url: str):
         self.url = url
         self.name = url.split("/")[-1]
-        print(f"MODEL: Using {self.name}")
+        logger.info(f"using {self.name}")
         self.path = os.path.join(self.CACHE_DIR, self.name)
 
         self.prepare()
@@ -21,8 +25,8 @@ class Model:
         os.makedirs(self.CACHE_DIR, exist_ok=True)
 
         if not os.path.exists(self.path):
-            print(f"MODEL: Downloading from {self.url}...")
+            logger.debug(f"downloading from {self.url}...")
             urllib.request.urlretrieve(self.url, self.path)
-            print(f"MODEL: Saved to {self.path}")
+            logger.debug(f"saved to {self.path}")
         else:
-            print(f"MODEL: Exists at {self.path}")
+            logger.debug(f"exists at {self.path}")

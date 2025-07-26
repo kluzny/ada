@@ -1,6 +1,9 @@
 from typing import List
 from ada.entry import Entry
 from ada.formatter import block
+from ada.logger import build_logger
+
+logger = build_logger(__name__)
 
 
 class Conversation:
@@ -11,7 +14,7 @@ class Conversation:
     history: List[Entry] = []
 
     def __init__(self):
-        pass
+        logger.info("initializing conversation")
 
     def append_entry(self, entry: Entry):
         self.history.append(entry)

@@ -1,3 +1,4 @@
+import logging
 import json
 
 
@@ -15,6 +16,10 @@ class Config:
 
     def model_url(self) -> str:
         return self.loaded["model_url"]
+
+    def log_level(self) -> int:
+        level = self.loaded["log_level"]
+        return getattr(logging, level)
 
 
 if __name__ == "__main__":
