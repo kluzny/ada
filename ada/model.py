@@ -16,7 +16,7 @@ class Model:
     def __init__(self, url: str):
         self.url = url
         self.name = url.split("/")[-1]
-        logger.info(f"using {self.name}")
+        logger.debug(f"using {self.name}")
         self.path = os.path.join(self.CACHE_DIR, self.name)
 
         self.prepare()
@@ -25,8 +25,8 @@ class Model:
         os.makedirs(self.CACHE_DIR, exist_ok=True)
 
         if not os.path.exists(self.path):
-            logger.debug(f"downloading from {self.url}...")
+            logger.info(f"downloading from {self.url}...")
             urllib.request.urlretrieve(self.url, self.path)
-            logger.debug(f"saved to {self.path}")
+            logger.info(f"saved to {self.path}")
         else:
-            logger.debug(f"exists at {self.path}")
+            logger.info(f"exists at {self.path}")

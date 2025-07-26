@@ -4,9 +4,16 @@ from ada.config import Config
 from ada.model import Model
 from ada.conversation import Conversation
 from ada.logger import build_logger
+from ada.answer import Answer
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
+
+SYSTEM_PROMPT = """
+You are an expert assistant named ADA.
+Your primary task is answering USER queries.
+Answer concisely while returning critical information.
+"""
 
 logger = build_logger(__name__)
 
@@ -32,7 +39,8 @@ class Agent:
     def build_llm(self):
         return Llama(
             model_path=self.model.path,
-            n_ctx=2048,
+            # n_ctx=2048,
+            n_ctx=32768,
             n_threads=4,
             verbose=False,  # TODO: can we capture the verbose output with our logger?
         )
@@ -54,9 +62,29 @@ class Agent:
                 self.conversation.append(WHOAMI, thought)
                 self.say(thought)
 
-    def think(self, prompt: str):
-        output = self.llm(prompt, max_tokens=None, stop=["\n", f"{WHOAREYOU}:"])
+    def muse(self, prompt: str):
+        """
+        Think, but without the conversation context
+        """
+        output = self.llm(prompt, max_tokens=None, stop=[f"{WHOAREYOU}:"])
         return output["choices"][0]["text"].strip()
+
+    def think(self, prompt: str):
+        output = self.thought(prompt)
+        answer = Answer(output)
+        return answer.parse()
+
+    def thought(self, prompt: str):
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages.append({"role": "user", "content": prompt})
+
+        return self.llm.create_chat_completion(
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.7,
+            max_tokens=256,  # TODO: None
+            stop=[f"{WHOAREYOU}:"],
+        )
 
 
 if __name__ == "__main__":
