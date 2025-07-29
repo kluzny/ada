@@ -4,7 +4,7 @@ from ada.config import Config
 from ada.model import Model
 from ada.conversation import Conversation
 from ada.logger import build_logger
-from ada.answer import Answer
+from ada.response import Response
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
@@ -12,10 +12,12 @@ WHOAREYOU = "USER"
 SYSTEM_PROMPT = """
 You are an expert assistant named ADA.
 Your primary task is answering USER queries.
-Answer concisely while returning critical information.
+Response concisely while returning critical information.
 """
 
 logger = build_logger(__name__)
+
+MAX_CONTEXT_LENGTH = 32768  # maximum context length for the LLM
 
 
 class Agent:
@@ -39,8 +41,7 @@ class Agent:
     def build_llm(self):
         return Llama(
             model_path=self.model.path,
-            # n_ctx=2048,
-            n_ctx=32768,
+            n_ctx=MAX_CONTEXT_LENGTH,
             n_threads=4,
             verbose=False,  # TODO: can we capture the verbose output with our logger?
         )
@@ -60,31 +61,31 @@ class Agent:
                 self.conversation.clear()
             else:
                 self.conversation.append(WHOAREYOU, prompt)
-                thought = self.think(prompt)
-                self.conversation.append(WHOAMI, thought)
-                self.say(thought)
+                response = Response(self.think(messages=self.conversation.messages()))
+
+                if response.tokens >= 0.75 * MAX_CONTEXT_LENGTH:
+                    logger.warning(
+                        f"tokens {response.tokens} exceed 75% of max {MAX_CONTEXT_LENGTH}."
+                    )
+
+                self.conversation.append_response(WHOAMI, response)
+                self.say(response.body)
 
     def muse(self, prompt: str):
         """
-        Think, but without the conversation context
+        think, but without the conversation context
         """
         output = self.llm(prompt, max_tokens=None, stop=[f"{WHOAREYOU}:"])
         return output["choices"][0]["text"].strip()
 
-    def think(self, prompt: str):
-        output = self.thought(prompt)
-        answer = Answer(output)
-        return answer.parse()
-
-    def thought(self, prompt: str):
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        messages.append({"role": "user", "content": prompt})
+    def think(self, messages: list[dict] = []):
+        messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
 
         return self.llm.create_chat_completion(
             messages=messages,
             response_format={"type": "json_object"},
             temperature=0.7,
-            max_tokens=256,  # TODO: None
+            max_tokens=None,
             stop=[f"{WHOAREYOU}:"],
         )
 

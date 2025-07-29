@@ -1,0 +1,22 @@
+{
+    "choices": [
+        {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+                "content": "{\n\"query\": \"Order the top 5 cities of Spain by population.\",\n\"answer\": [\n\"Madrid\",\n\"Barcelona\",\n\"Valencia\",\n\"Seville\",\n\"Zaragoza\"\n],\n\"relevance\": 100\n} ",
+                "role": "assistant"
+            }
+        }
+    ],
+    "created": 1753775058,
+    "id": "chatcmpl-5862f4ac-59a1-4d75-9a2d-13cdd061ed9f",
+    "model": "models/mistral-7b-instruct-v0.1.Q4_0.gguf",
+    "object": "chat.completion",
+    "usage": {
+        "completion_tokens": 66,
+        "prompt_tokens": 878,
+        "total_tokens": 944
+    }
+}
