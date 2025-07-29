@@ -1,0 +1,22 @@
+{
+    "choices": [
+        {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+                "content": "foo",
+                "role": "assistant"
+            }
+        }
+    ],
+    "created": 1753740696,
+    "id": "chatcmpl-3388036e-6a71-4404-9b83-92e0cfa12fea",
+    "model": "models/mistral-7b-instruct-v0.1.Q4_0.gguf",
+    "object": "chat.completion",
+    "usage": {
+        "completion_tokens": 13,
+        "prompt_tokens": 56,
+        "total_tokens": 69
+    }
+}

@@ -49,7 +49,9 @@ class Agent:
         print(f"{WHOAMI} Chat (type 'exit' to quit)")
         while True:
             prompt = input(f"{WHOAREYOU}: ")
-            if prompt.lower() == "exit":
+            if prompt.strip() == "":
+                continue
+            elif prompt.lower() == "exit":
                 self.say("Goodbye")
                 break
             elif prompt.lower() == "history":
