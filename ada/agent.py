@@ -17,8 +17,6 @@ Response concisely while returning critical information.
 
 logger = build_logger(__name__)
 
-MAX_CONTEXT_LENGTH = 32768  # maximum context length for the LLM
-
 
 class Agent:
     """
@@ -26,12 +24,14 @@ class Agent:
     """
 
     model: Model
+    max_content_length: int
     conversation: Conversation
 
     def __init__(self):
         logger.info("initializing agent")
         config = Config()
         self.model = Model(config.model_url())
+        self.max_content_length = config.model_tokens()
         self.llm = self.build_llm()
         self.conversation = Conversation()
 
@@ -41,7 +41,7 @@ class Agent:
     def build_llm(self):
         return Llama(
             model_path=self.model.path,
-            n_ctx=MAX_CONTEXT_LENGTH,
+            n_ctx=self.max_content_length,
             n_threads=4,
             verbose=False,  # TODO: can we capture the verbose output with our logger?
         )
@@ -64,8 +64,10 @@ class Agent:
                 response = Response(self.think(messages=self.conversation.messages()))
 
                 logger.info(f"using {response.tokens} tokens")
-                if response.tokens >= 0.75 * MAX_CONTEXT_LENGTH:
-                    logger.warning(f"usage exceed 75% of max {MAX_CONTEXT_LENGTH}.")
+                if response.tokens >= 0.75 * self.max_content_length:
+                    logger.warning(
+                        f"usage exceed 75% of max {self.max_content_length}."
+                    )
 
                 self.conversation.append_response(WHOAMI, response)
                 self.say(response.body)

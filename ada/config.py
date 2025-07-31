@@ -5,7 +5,7 @@ import json
 class Config:
     CONFIG_PATH = "config.json"
 
-    loaded = None
+    loaded: dict
 
     def __init__(self):
         self.loaded = self.load(self.CONFIG_PATH)
@@ -14,12 +14,18 @@ class Config:
         with open(path, "r") as f:
             return json.load(f)
 
-    def model_url(self) -> str:
-        return self.loaded["model_url"]
-
     def log_level(self) -> int:
         level = self.loaded["log_level"]
         return getattr(logging, level)
+
+    def model(self) -> dict:
+        return self.loaded["model"]
+
+    def model_url(self) -> str:
+        return self.model()["url"]
+
+    def model_tokens(self) -> int:
+        return self.model()["tokens"]
 
 
 if __name__ == "__main__":
