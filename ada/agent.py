@@ -63,10 +63,9 @@ class Agent:
                 self.conversation.append(WHOAREYOU, prompt)
                 response = Response(self.think(messages=self.conversation.messages()))
 
+                logger.info(f"using {response.tokens} tokens")
                 if response.tokens >= 0.75 * MAX_CONTEXT_LENGTH:
-                    logger.warning(
-                        f"tokens {response.tokens} exceed 75% of max {MAX_CONTEXT_LENGTH}."
-                    )
+                    logger.warning(f"usage exceed 75% of max {MAX_CONTEXT_LENGTH}.")
 
                 self.conversation.append_response(WHOAMI, response)
                 self.say(response.body)
