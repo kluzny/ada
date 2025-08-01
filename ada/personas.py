@@ -8,9 +8,12 @@ class Personas:
 
     DEFAULT = Persona(
         name="default",
-        prompt="""You are an expert assistant named ADA.
+        description="The standard expert assistant.",
+        prompt="""
+You are an expert assistant named ADA.
 Your primary task is answering USER queries.
-Respond concisely while returning critical information.""",
+Respond concisely while returning critical information.
+""".strip(),
     )
 
     @classmethod
