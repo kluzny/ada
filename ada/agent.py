@@ -5,15 +5,11 @@ from ada.model import Model
 from ada.conversation import Conversation
 from ada.logger import build_logger
 from ada.response import Response
+from ada.persona import Persona
+from ada.personas import Personas
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
-
-SYSTEM_PROMPT = """
-You are an expert assistant named ADA.
-Your primary task is answering USER queries.
-Response concisely while returning critical information.
-"""
 
 logger = build_logger(__name__)
 
@@ -26,6 +22,7 @@ class Agent:
     model: Model
     max_content_length: int
     conversation: Conversation
+    persona: Persona
 
     def __init__(self):
         logger.info("initializing agent")
@@ -34,9 +31,32 @@ class Agent:
         self.max_content_length = config.model_tokens()
         self.llm = self.build_llm()
         self.conversation = Conversation()
+        self.persona = Personas.DEFAULT
+        logger.info(f"using {self.persona.name} persona")
 
     def say(self, input: str) -> None:
         print(f"{WHOAMI}: {input}")
+
+    def switch_persona(self, name: str) -> bool:
+        """
+        Switch to a different persona by name.
+
+        Args:
+            name: The name of the persona to switch to
+
+        Returns:
+            bool: True if switch was successful, False otherwise
+        """
+        persona = Personas.get(name)
+        if persona is None:
+            logger.warning(
+                f"Persona '{name}' not found. Available personas: {[p.name for p in Personas.all()]}"
+            )
+            return False
+
+        self.persona = persona
+        logger.info(f"Switched to persona: {persona}")
+        return True
 
     def build_llm(self):
         return Llama(
@@ -59,6 +79,22 @@ class Agent:
                 print(self.conversation)
             elif prompt.lower() == "clear":
                 self.conversation.clear()
+            elif prompt.lower() == "modes":
+                current = f"Current mode is:\n\n{self.persona}\n"
+                available_personas = ""
+                for persona in Personas.all():
+                    available_personas += str(persona) + "\n"
+                self.say(
+                    f"{current}\nAvailable personas:\n\n{available_personas}\nUse `switch [name]` to change persona."
+                )
+            elif prompt.lower().startswith("switch "):
+                persona_name = prompt[7:].strip()  # Remove "switch " prefix
+                if self.switch_persona(persona_name):
+                    self.say(f"Switched to persona: {self.persona.name}")
+                else:
+                    self.say(
+                        f"Persona '{persona_name}' not found. Use 'modes' to see available personas."
+                    )
             else:
                 self.conversation.append(WHOAREYOU, prompt)
                 response = Response(self.think(messages=self.conversation.messages()))
@@ -79,8 +115,14 @@ class Agent:
         output = self.llm(prompt, max_tokens=None, stop=[f"{WHOAREYOU}:"])
         return output["choices"][0]["text"].strip()
 
+    def system_prompt(self) -> dict:
+        return {
+            "role": "system",
+            "content": self.persona.prompt,
+        }
+
     def think(self, messages: list[dict] = []):
-        messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
+        messages.insert(0, self.system_prompt())
 
         return self.llm.create_chat_completion(
             messages=messages,

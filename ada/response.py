@@ -75,7 +75,8 @@ class Response:
             output.append(parsed["output"])
 
         if "code" in parsed:
-            output.append(f"```\n{parsed['code']}\n```")
+            if parsed["code"] is not None and parsed["code"].strip() != "":
+                output.append(f"```\n{parsed['code']}\n```")
 
         if len(output) == 0:
             logger.error(f"unable to extract keys {output.keys()}")
