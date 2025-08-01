@@ -5,15 +5,10 @@ from ada.model import Model
 from ada.conversation import Conversation
 from ada.logger import build_logger
 from ada.response import Response
+from ada.personas import Personas
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
-
-SYSTEM_PROMPT = """
-You are an expert assistant named ADA.
-Your primary task is answering USER queries.
-Response concisely while returning critical information.
-"""
 
 logger = build_logger(__name__)
 
@@ -80,7 +75,7 @@ class Agent:
         return output["choices"][0]["text"].strip()
 
     def think(self, messages: list[dict] = []):
-        messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
+        messages.insert(0, {"role": "system", "content": Personas.DEFAULT.prompt})
 
         return self.llm.create_chat_completion(
             messages=messages,
