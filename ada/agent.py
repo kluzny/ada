@@ -66,47 +66,73 @@ class Agent:
             verbose=False,  # TODO: can we capture the verbose output with our logger?
         )
 
+    def scan_commands(self, prompt: str) -> bool:
+        """
+        Scan for and handle special commands.
+
+        Args:
+            prompt: The user input to scan for commands
+
+        Returns:
+            bool: True if a command was handled, False if no command was found
+        """
+        neat = prompt.lower().trim()
+        if neat == "clear":
+            self.conversation.clear()
+            return True
+        elif neat == "history":
+            print(self.conversation)
+            return True
+        elif neat == "modes" or neat == "mode":
+            current = f"Current mode is:\n\n{self.persona}\n"
+            available_personas = ""
+            for persona in Personas.all():
+                available_personas += str(persona) + "\n"
+            self.say(
+                f"{current}\nAvailable personas:\n\n{available_personas}\nUse `switch [name]` to change personas."
+            )
+            return True
+        elif prompt.lower().startswith("switch "):
+            persona_name = prompt[7:].strip()  # Remove "switch " prefix
+            if self.switch_persona(persona_name):
+                self.say(f"Switched to persona: {self.persona.name}")
+            else:
+                self.say(
+                    f"Persona '{persona_name}' not found. Use 'modes' to see available personas."
+                )
+            return True
+        return False
+
+    def process_message(self, prompt: str):
+        """
+        Process a user message and generate a response.
+
+        Args:
+            prompt: The user's input message
+        """
+        self.conversation.append(WHOAREYOU, prompt)
+        response = Response(self.think(messages=self.conversation.messages()))
+
+        logger.info(f"using {response.tokens} tokens")
+        if response.tokens >= 0.75 * self.max_content_length:
+            logger.warning(f"usage exceed 75% of max {self.max_content_length}.")
+
+        self.conversation.append_response(WHOAMI, response)
+        self.say(response.body)
+
     def chat(self):
         print(f"{WHOAMI} Chat (type 'exit' to quit)")
         while True:
             prompt = input(f"{WHOAREYOU}: ")
             if prompt.strip() == "":
-                continue
+                continue  # ignore empty user input
+            elif self.scan_commands(prompt):
+                continue  # command was handled by scan_commands
             elif prompt.lower() == "exit":
                 self.say("Goodbye")
                 break
-            elif prompt.lower() == "history":
-                print(self.conversation)
-            elif prompt.lower() == "clear":
-                self.conversation.clear()
-            elif prompt.lower() == "modes":
-                current = f"Current mode is:\n\n{self.persona}\n"
-                available_personas = ""
-                for persona in Personas.all():
-                    available_personas += str(persona) + "\n"
-                self.say(
-                    f"{current}\nAvailable personas:\n\n{available_personas}\nUse `switch [name]` to change persona."
-                )
-            elif prompt.lower().startswith("switch "):
-                persona_name = prompt[7:].strip()  # Remove "switch " prefix
-                if self.switch_persona(persona_name):
-                    self.say(f"Switched to persona: {self.persona.name}")
-                else:
-                    self.say(
-                        f"Persona '{persona_name}' not found. Use 'modes' to see available personas."
-                    )
             else:
-                self.conversation.append(WHOAREYOU, prompt)
-                response = Response(self.think(messages=self.conversation.messages()))
-
-                logger.info(f"using {response.tokens} tokens")
-                if response.tokens >= 0.75 * self.max_content_length:
-                    logger.warning(
-                        f"usage exceed 75% of max {self.max_content_length}."
-                    )
-
-                self.conversation.append_response(WHOAMI, response)
-                self.say(response.body)
+                self.process_message(prompt)
 
     def muse(self, prompt: str):
         """
