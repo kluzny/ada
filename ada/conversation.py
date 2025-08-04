@@ -13,19 +13,18 @@ class Conversation:
     A history of Agent interactions
     """
 
-    history: List[Entry] = []
-
     def __init__(self):
         logger.info("initializing conversation")
+        self.history: List[Entry] = []
 
     def append(self, author: str, body: str):
-        entry = Entry(author, body)
+        entry = Entry(author=author, body=body)
         self.history.append(entry)
 
     def append_response(self, author: str, response: Response):
         entry = Entry(
-            author,
-            response.body,
+            author=author,
+            body=response.body,
             role=response.role,
             content=response.content,
         )
