@@ -17,6 +17,9 @@ class Config:
         level = self.loaded["log_level"]
         return getattr(logging, level)
 
+    def record(self) -> bool:
+        return self.loaded["record"]
+
     def __model(self) -> dict:
         return self.loaded["model"]
 

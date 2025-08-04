@@ -24,13 +24,14 @@ class Agent:
     conversation: Conversation
     persona: Persona
 
-    def __init__(self):
+    # TODO: inject config, rather than pass in the config path
+    def __init__(self, config_path: str = None):
         logger.info("initializing agent")
-        config = Config()
+        config = Config(path=config_path)
         self.model = Model(config.model_url())
         self.max_content_length = config.model_tokens()
         self.llm = self.build_llm()
-        self.conversation = Conversation()
+        self.conversation = Conversation(record=config.record())
         self.persona = Personas.DEFAULT
         logger.info(f"using {self.persona.name} persona")
 

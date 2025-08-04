@@ -1,7 +1,8 @@
 {
   "log_level": "DEBUG",
+  "record": false,
   "model": {
-    "url": "https://example.com/model.gguf",
+    "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf",
     "tokens": 2048
   }
 }
