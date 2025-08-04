@@ -76,7 +76,7 @@ class Agent:
         Returns:
             bool: True if a command was handled, False if no command was found
         """
-        neat = prompt.lower().trim()
+        neat = prompt.lower().strip()
         if neat == "clear":
             self.conversation.clear()
             return True
