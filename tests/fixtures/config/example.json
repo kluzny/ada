@@ -1,0 +1,7 @@
+{
+  "log_level": "DEBUG",
+  "model": {
+    "url": "https://example.com/model.gguf",
+    "tokens": 2048
+  }
+}
