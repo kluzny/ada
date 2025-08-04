@@ -1,4 +1,5 @@
 from typing import List
+from pydantic import BaseModel, Field
 
 from ada.entry import Entry
 from ada.formatter import block
@@ -8,14 +9,15 @@ from ada.response import Response
 logger = build_logger(__name__)
 
 
-class Conversation:
+class Conversation(BaseModel):
     """
     A history of Agent interactions
     """
 
-    def __init__(self):
-        logger.info("initializing conversation")
-        self.history: List[Entry] = []
+    history: List[Entry] = Field(
+        default_factory=list,
+        description="List of conversation entries",
+    )
 
     def append(self, author: str, body: str):
         entry = Entry(author=author, body=body)
