@@ -1,5 +1,7 @@
 from ada import Agent
+from ada.config import Config
 
-agent = Agent()
+config = Config()
+agent = Agent(config=config)
 
 agent.chat()

@@ -19,9 +19,8 @@ class Agent:
     An interactive llm agent
     """
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config: Config):
         logger.info("initializing agent")
-        config = Config(path=config_path)
         self.model: Model = Model(config.model_url())
         self.max_content_length: int = config.model_tokens()
         self.llm: Llama = self.build_llm()
@@ -152,8 +151,3 @@ class Agent:
             max_tokens=None,
             stop=[f"{WHOAREYOU}:"],
         )
-
-
-if __name__ == "__main__":
-    agent = Agent()
-    agent.chat()
