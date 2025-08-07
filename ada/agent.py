@@ -19,20 +19,14 @@ class Agent:
     An interactive llm agent
     """
 
-    model: Model
-    max_content_length: int
-    conversation: Conversation
-    persona: Persona
-
-    # TODO: inject config, rather than pass in the config path
     def __init__(self, config_path: str = None):
         logger.info("initializing agent")
         config = Config(path=config_path)
-        self.model = Model(config.model_url())
-        self.max_content_length = config.model_tokens()
-        self.llm = self.build_llm()
-        self.conversation = Conversation(record=config.record())
-        self.persona = Personas.DEFAULT
+        self.model: Model = Model(config.model_url())
+        self.max_content_length: int = config.model_tokens()
+        self.llm: Llama = self.build_llm()
+        self.conversation: Conversation = Conversation(record=config.record())
+        self.persona: Persona = Personas.DEFAULT
         logger.info(f"using {self.persona.name} persona")
 
     def say(self, input: str) -> None:
