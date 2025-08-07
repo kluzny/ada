@@ -1,4 +1,7 @@
 activate
 __pycache__
-models
 config.json
+models/*
+!models/.gitkeep
+conversations/*
+!conversations/.gitkeep

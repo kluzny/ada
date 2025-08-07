@@ -19,19 +19,13 @@ class Agent:
     An interactive llm agent
     """
 
-    model: Model
-    max_content_length: int
-    conversation: Conversation
-    persona: Persona
-
-    def __init__(self):
+    def __init__(self, config: Config):
         logger.info("initializing agent")
-        config = Config()
-        self.model = Model(config.model_url())
-        self.max_content_length = config.model_tokens()
-        self.llm = self.build_llm()
-        self.conversation = Conversation()
-        self.persona = Personas.DEFAULT
+        self.model: Model = Model(config.model_url())
+        self.max_content_length: int = config.model_tokens()
+        self.llm: Llama = self.build_llm()
+        self.conversation: Conversation = Conversation(record=config.record())
+        self.persona: Persona = Personas.DEFAULT
         logger.info(f"using {self.persona.name} persona")
 
     def say(self, input: str) -> None:
@@ -76,7 +70,7 @@ class Agent:
         Returns:
             bool: True if a command was handled, False if no command was found
         """
-        neat = prompt.lower().trim()
+        neat = prompt.lower().strip()
         if neat == "clear":
             self.conversation.clear()
             return True
@@ -157,8 +151,3 @@ class Agent:
             max_tokens=None,
             stop=[f"{WHOAREYOU}:"],
         )
-
-
-if __name__ == "__main__":
-    agent = Agent()
-    agent.chat()

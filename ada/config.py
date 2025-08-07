@@ -3,14 +3,13 @@ import json
 
 
 class Config:
-    CONFIG_PATH = "config.json"
+    DEFAULT_PATH = "config.json"
 
-    loaded: dict
+    def __init__(self, path: str = None):
+        self.config_path = path or self.DEFAULT_PATH
+        self.loaded = self.__load(self.config_path)
 
-    def __init__(self):
-        self.loaded = self.load(self.CONFIG_PATH)
-
-    def load(self, path: str):
+    def __load(self, path: str):
         with open(path, "r") as f:
             return json.load(f)
 
@@ -18,19 +17,22 @@ class Config:
         level = self.loaded["log_level"]
         return getattr(logging, level)
 
-    def model(self) -> dict:
+    def record(self) -> bool:
+        return self.loaded["record"]
+
+    def __model(self) -> dict:
         return self.loaded["model"]
 
     def model_url(self) -> str:
-        return self.model()["url"]
+        return self.__model()["url"]
 
     def model_tokens(self) -> int:
-        return self.model()["tokens"]
+        return self.__model()["tokens"]
 
 
 if __name__ == "__main__":
     config = Config()
 
-    print(f"CONFIG_PATH: {config.CONFIG_PATH}")
+    print(f"CONFIG_PATH: {config.config_path}")
     print("Loaded:")
     print(json.dumps(config.loaded, indent=4))
