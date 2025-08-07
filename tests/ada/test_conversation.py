@@ -166,32 +166,35 @@ def test_conversation_record_filename_format():
 
 
 def test_conversation_record_json_creation():
-    """Test that JSON file is created when recording is enabled"""
+    """Test that JSON file is created only when an entry is added"""
     with tempfile.TemporaryDirectory() as temp_dir:
-        Conversation(record=True, storage_path=temp_dir)
+        conversation = Conversation(record=True, storage_path=temp_dir)
 
-        # Check that conversations directory was created
-        assert Path(temp_dir).exists()
+        # File should not exist after initialization
+        json_files = list(Path(temp_dir).glob("*.json"))
+        assert len(json_files) == 0
 
-        # Check that JSON file was created
+        # Add an entry
+        conversation.append("USER", "Hello")
         json_files = list(Path(temp_dir).glob("*.json"))
         assert len(json_files) == 1
 
-        # Check that file contains empty array
+        # Check that file contains the entry
         with open(json_files[0], "r") as f:
             data = json.load(f)
-            assert data == []
+            assert len(data) == 1
+            assert data[0]["author"] == "USER"
+            assert data[0]["body"] == "Hello"
 
 
 def test_conversation_record_json_updates():
     """Test that JSON file is updated when entries are added"""
     with tempfile.TemporaryDirectory() as temp_dir:
         conversation = Conversation(record=True, storage_path=temp_dir)
-        json_file = list(Path(temp_dir).glob("*.json"))[0]
-
         # Add an entry
         conversation.append("USER", "Hello")
 
+        json_file = list(Path(temp_dir).glob("*.json"))[0]
         # Check that JSON file was updated
         with open(json_file, "r") as f:
             data = json.load(f)
@@ -214,7 +217,6 @@ def test_conversation_record_response_json_updates():
     """Test that JSON file is updated when responses are added"""
     with tempfile.TemporaryDirectory() as temp_dir:
         conversation = Conversation(record=True, storage_path=temp_dir)
-        json_file = list(Path(temp_dir).glob("*.json"))[0]
 
         # Create a mock response
         response_source = {
@@ -225,6 +227,8 @@ def test_conversation_record_response_json_updates():
 
         # Add a response
         conversation.append_response("ASSISTANT", response)
+
+        json_file = list(Path(temp_dir).glob("*.json"))[0]
 
         # Check that JSON file was updated
         with open(json_file, "r") as f:
@@ -237,19 +241,16 @@ def test_conversation_record_response_json_updates():
 
 
 def test_conversation_record_clear_json_updates():
-    """Test that JSON file is updated when conversation is cleared"""
+    """Test that JSON file is deleted when conversation is cleared"""
     with tempfile.TemporaryDirectory() as temp_dir:
         conversation = Conversation(record=True, storage_path=temp_dir)
-        json_file = list(Path(temp_dir).glob("*.json"))[0]
-
         # Add some entries
         conversation.append("USER", "Hello")
         conversation.append("ASSISTANT", "Hi")
+        json_file = list(Path(temp_dir).glob("*.json"))[0]
 
         # Clear conversation
         conversation.clear()
 
-        # Check that JSON file was updated to empty array
-        with open(json_file, "r") as f:
-            data = json.load(f)
-            assert data == []
+        # Check that JSON file was deleted
+        assert not Path(json_file).exists()
