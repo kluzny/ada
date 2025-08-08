@@ -1,4 +1,4 @@
-.PHONY: clean purge test lint check
+.PHONY: clean purge test lint format fix check
 
 clean:
 	rm -rf conversations/*.json
@@ -9,7 +9,12 @@ purge: clean
 test:
 	pytest
 
-lint:
-	ruff format && ruff check
+format:
+	ruff format
+
+fix:
+	ruff check --fix
+
+lint: format fix
 
 check: lint test
