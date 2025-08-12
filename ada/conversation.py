@@ -13,6 +13,8 @@ from ada.response import Response
 logger = build_logger(__name__)
 
 
+# TODO: need to store metadata, for instance, namable conversations
+# TODO: need to store tool calls ( and maybe outputs )
 class Conversation(BaseModel):
     """
     A history of Agent interactions

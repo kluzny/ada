@@ -29,3 +29,13 @@ Refer to the official documentation for your specific GPU [llama-cpp-python#inst
 ```bash
 $ python main.py # a minimal REPL for the Agent
 ```
+
+## Roadmap
+
+- switch to prompt_toolkit
+- bash style history
+- resumable/forkable conversations
+- multi-step tasks
+- configurable system prompts
+- better tool use using explicit `tool_choice` calls
+- tools for file system access e.g. find, tree, cat, diff

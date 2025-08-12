@@ -14,6 +14,7 @@ for tool in ToolBox.tools:
     globals()[tool.name] = tool.create_global_function()
 
 
+# TODO: switch to pydantic model
 class Response:
     """
     Parses the LLM source object and returns text
