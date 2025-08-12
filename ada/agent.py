@@ -147,7 +147,7 @@ class Agent:
 
         return self.llm.create_chat_completion(
             messages=messages,
-            tools=self.__get_tool_definitions(),
+            tools=ToolBox.definitions(),
             # tool_choice={
             #     "type": "function",
             #     "function": {"name": "example_tool"},
@@ -162,19 +162,14 @@ class Agent:
     def __system_prompt(self) -> dict:
         prompt = self.persona.prompt + "\n"
         prompt += "Use any of the following tools:\n"
-        for tool in ToolBox.tools:
-            prompt += str(tool) + "\n"
+        prompt += "\n".join([str(tool) for tool in ToolBox.tools])
 
         return {
             "role": "system",
             "content": prompt.strip(),
         }
 
-    def __get_tool_definitions(self) -> list[dict]:
-        return [tool.definition() for tool in ToolBox.tools]
-
     def __list_tools(self) -> None:
         output = "Available tools:\n\n"
-        for tool in ToolBox.tools:
-            output += str(tool) + "\n"
+        output += "\n".join([str(tool) for tool in ToolBox.tools])
         self.say(output)
