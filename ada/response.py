@@ -1,8 +1,6 @@
 import json
 
 
-from typing import List
-
 from ada.formatter import dump
 from ada.logger import build_logger
 from ada.tool_box import ToolBox
@@ -81,8 +79,8 @@ class Response:
             self.content = raw_content
             self.body = NULL_OUTPUT
 
-    def __handle_tool_calls(self, tool_calls: List[dict]) -> str:
-        returns: List[str] = []
+    def __handle_tool_calls(self, tool_calls: list[dict]) -> str:
+        returns: list[str] = []
 
         tool_functions = [
             tool_call for tool_call in tool_calls if tool_call.get("type") == "function"
