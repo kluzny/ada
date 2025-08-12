@@ -1,0 +1,36 @@
+{
+    "choices": [
+        {
+            "finish_reason": "tool_calls",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+                "content": null,
+                "function_call": {
+                    "arguments": "{\"name\": \"Alan\"}",
+                    "name": "example_tool"
+                },
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "function": {
+                            "arguments": "{\"name\": \"Alan\"}",
+                            "name": "example_tool"
+                        },
+                        "id": "call__0_example_tool_cmpl-ab27771b-b434-424a-a5f7-848ee88d9f0a",
+                        "type": "function"
+                    }
+                ]
+            }
+        }
+    ],
+    "created": 1754994279,
+    "id": "chatcmpl-ab27771b-b434-424a-a5f7-848ee88d9f0a",
+    "model": "models/mistral-7b-instruct-v0.1.Q4_0.gguf",
+    "object": "chat.completion",
+    "usage": {
+        "completion_tokens": 7,
+        "prompt_tokens": 101,
+        "total_tokens": 108
+    }
+}

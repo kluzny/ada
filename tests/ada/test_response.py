@@ -40,3 +40,10 @@ def test_response_can_parse_list_content():
     response = Response(list)
 
     assert response.body == "['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Zaragoza']"
+
+
+def test_response_can_parse_tool_calls():
+    tool_call = parse("llama/tool.json")
+    response = Response(tool_call)
+
+    assert response.body == "Hello, Alan! This is an example tool."

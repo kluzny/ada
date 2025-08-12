@@ -3,7 +3,6 @@ import time
 import uuid
 
 from pathlib import Path
-from typing import List
 from pydantic import BaseModel, Field
 
 from ada.entry import Entry
@@ -14,6 +13,8 @@ from ada.response import Response
 logger = build_logger(__name__)
 
 
+# TODO: need to store metadata, for instance, namable conversations
+# TODO: need to store tool calls ( and maybe outputs )
 class Conversation(BaseModel):
     """
     A history of Agent interactions
@@ -21,7 +22,7 @@ class Conversation(BaseModel):
 
     STORAGE_PATH: str = "conversations"
 
-    history: List[Entry] = Field(
+    history: list[Entry] = Field(
         default_factory=list,
         description="List of conversation entries",
     )
@@ -71,7 +72,7 @@ class Conversation(BaseModel):
             self.__remove_record()
         print(block("HISTORY CLEARED").strip())
 
-    def messages(self) -> List[dict]:
+    def messages(self) -> list[dict]:
         return [entry.message() for entry in self.history]
 
     def __str__(self):
