@@ -1,11 +1,19 @@
 import json
 
+
+from typing import List
+
 from ada.formatter import dump
 from ada.logger import build_logger
+from ada.tool_box import ToolBox
 
 logger = build_logger(__name__)
 
 NULL_OUTPUT = "DERP"
+
+# create all the tool methods for the Agent to call
+for tool in ToolBox.tools:
+    globals()[tool.name] = tool.create_global_function()
 
 
 class Response:
@@ -14,7 +22,8 @@ class Response:
     """
 
     source: dict
-    content: str  # keep in its original string format
+    content: str | None
+    tool_calls: str | None
     body: str
     role: str = "assistant"
     tokens: int = 0  # number of tokens used in the response
@@ -23,7 +32,7 @@ class Response:
         logger.info("initialising response with \n" + dump(source))
         self.source = source
         self.tokens = source.get("usage", {}).get("total_tokens", 0)
-        self.content, self.body = self.parse()
+        self.parse()
 
     def choose(self) -> dict:
         return self.source["choices"][0]
@@ -40,21 +49,55 @@ class Response:
     def parse(self) -> tuple[dict, str]:
         try:
             choice = self.choose()
-            content = choice["message"]["content"]
+            message = choice["message"]
+            raw_content = message["content"]
 
-            parsed = self.maybe_json(content)
-            if isinstance(parsed, str):
-                # cooerce string to dict just to simplify downstream processing
-                return json.dumps({"text": parsed}), parsed
-            elif isinstance(parsed, dict):
-                return content, self.format(parsed)
+            if raw_content is not None:
+                parsed_content = self.maybe_json(raw_content)
+
+                if isinstance(parsed_content, str):
+                    # cooerce string to dict just to simplify downstream processing
+                    content = json.dumps({"text": parsed_content})
+                    body = parsed_content
+                elif isinstance(parsed_content, dict):
+                    content = raw_content
+                    body = self.format(parsed_content)
+                else:
+                    raise TypeError("unexpected type for content")
             else:
-                raise TypeError("unexpected type for content")
+                content = None
+                body = ""
+
+            if "tool_calls" in message:
+                self.tool_calls = message["tool_calls"]
+                body += self.__handle_tool_calls(self.tool_calls)
+
+            self.content = content
+            self.body = body
         except Exception as e:
             logger.error(e)
             logger.error("unable to parse llm source")
             logger.error("\n" + dump(self.source))
-            return {}, NULL_OUTPUT
+            self.content = raw_content
+            self.body = NULL_OUTPUT
+
+    def __handle_tool_calls(self, tool_calls: List[dict]) -> str:
+        returns: List[str] = []
+
+        tool_functions = [
+            tool_call for tool_call in tool_calls if tool_call.get("type") == "function"
+        ]
+
+        for tool_function in tool_functions:
+            function_signature = tool_function["function"]
+            function_name = function_signature["name"]
+            keyword_args = json.loads(function_signature["arguments"])
+
+            logger.info(f"invoking {function_name} with {keyword_args}")
+            function = globals()[function_name]
+            returns.append(function(**keyword_args))
+
+        return "\n".join(returns)
 
     def format(self, parsed) -> str:
         output = []

@@ -7,6 +7,7 @@ from ada.logger import build_logger
 from ada.response import Response
 from ada.persona import Persona
 from ada.personas import Personas
+from ada.tool_box import ToolBox
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
@@ -77,6 +78,12 @@ class Agent:
         elif neat == "history":
             print(self.conversation)
             return True
+        elif neat == "tools":
+            self.__list_tools()
+            return True
+        elif neat == "prompt":
+            self.say("SYSTEM_PROMPT: " + self.__system_prompt()["content"])
+            return True
         elif neat == "modes" or neat == "mode":
             current = f"Current mode is:\n\n{self.persona}\n"
             available_personas = ""
@@ -135,19 +142,39 @@ class Agent:
         output = self.llm(prompt, max_tokens=None, stop=[f"{WHOAREYOU}:"])
         return output["choices"][0]["text"].strip()
 
-    def system_prompt(self) -> dict:
-        return {
-            "role": "system",
-            "content": self.persona.prompt,
-        }
-
     def think(self, messages: list[dict] = []):
-        messages.insert(0, self.system_prompt())
+        messages.insert(0, self.__system_prompt())
 
         return self.llm.create_chat_completion(
             messages=messages,
+            tools=self.__get_tool_definitions(),
+            # tool_choice={
+            #     "type": "function",
+            #     "function": {"name": "example_tool"},
+            # },
+            tool_choice="auto",  # not yet implemented https://github.com/abetlen/llama-cpp-python/issues/1338
             response_format={"type": "json_object"},
             temperature=0.7,
             max_tokens=None,
             stop=[f"{WHOAREYOU}:"],
         )
+
+    def __system_prompt(self) -> dict:
+        prompt = self.persona.prompt + "\n"
+        prompt += "Use any of the following tools:\n"
+        for tool in ToolBox.tools:
+            prompt += str(tool) + "\n"
+
+        return {
+            "role": "system",
+            "content": prompt.strip(),
+        }
+
+    def __get_tool_definitions(self) -> list[dict]:
+        return [tool.definition() for tool in ToolBox.tools]
+
+    def __list_tools(self) -> None:
+        output = "Available tools:\n\n"
+        for tool in ToolBox.tools:
+            output += str(tool) + "\n"
+        self.say(output)
