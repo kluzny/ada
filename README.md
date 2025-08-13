@@ -32,7 +32,7 @@ $ python main.py # a minimal REPL for the Agent
 
 ## Roadmap
 
-- bash style history
+- command autocomplete
 - resumable/forkable conversations
 - multi-step tasks
 - configurable system prompts

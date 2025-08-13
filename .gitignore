@@ -5,3 +5,4 @@ models/*
 !models/.gitkeep
 conversations/*
 !conversations/.gitkeep
+.ada_history
