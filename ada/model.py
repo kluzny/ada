@@ -12,10 +12,6 @@ class Model:
     CACHE_DIR = "models"
     CHUNK_SIZE = 1024  # 1kb
 
-    url = None
-    name = None
-    path = None
-
     def __init__(self, url: str):
         self.url = url
         self.name = url.split("/")[-1]
