@@ -1,4 +1,6 @@
 from llama_cpp import Llama
+from prompt_toolkit import prompt, PromptSession
+from prompt_toolkit.history import FileHistory
 
 from ada.config import Config
 from ada.model import Model
@@ -20,6 +22,8 @@ class Agent:
     An interactive llm agent
     """
 
+    HISTORY_FILE = ".ada_history"
+
     def __init__(self, config: Config):
         logger.info("initializing agent")
         self.model: Model = Model(config.model_url())
@@ -28,6 +32,15 @@ class Agent:
         self.conversation: Conversation = Conversation(record=config.record())
         self.persona: Persona = Personas.DEFAULT
         logger.info(f"using {self.persona.name} persona")
+        self.__init_prompt(config)
+
+    def __init_prompt(self, config: Config) -> None:
+        if config.history():
+            logger.info(f"using history file: {self.HISTORY_FILE}")
+            session = PromptSession(history=FileHistory(self.HISTORY_FILE))
+            self.input = session.prompt
+        else:
+            self.input = prompt
 
     def say(self, input: str) -> None:
         print(f"{WHOAMI}: {input}")
@@ -61,17 +74,17 @@ class Agent:
             verbose=False,  # TODO: can we capture the verbose output with our logger?
         )
 
-    def scan_commands(self, prompt: str) -> bool:
+    def scan_commands(self, query: str) -> bool:
         """
         Scan for and handle special commands.
 
         Args:
-            prompt: The user input to scan for commands
+            query: The user input to scan for commands
 
         Returns:
             bool: True if a command was handled, False if no command was found
         """
-        neat = prompt.lower().strip()
+        neat = query.lower().strip()
         if neat == "clear":
             self.conversation.clear()
             return True
@@ -93,8 +106,8 @@ class Agent:
                 f"{current}\nAvailable personas:\n\n{available_personas}\nUse `switch [name]` to change personas."
             )
             return True
-        elif prompt.lower().startswith("switch "):
-            persona_name = prompt[7:].strip()  # Remove "switch " prefix
+        elif query.lower().startswith("switch "):
+            persona_name = query[7:].strip()  # Remove "switch " prefix
             if self.switch_persona(persona_name):
                 self.say(f"Switched to persona: {self.persona.name}")
             else:
@@ -104,14 +117,14 @@ class Agent:
             return True
         return False
 
-    def process_message(self, prompt: str):
+    def process_message(self, query: str):
         """
         Process a user message and generate a response.
 
         Args:
-            prompt: The user's input message
+            query: The user's input message
         """
-        self.conversation.append(WHOAREYOU, prompt)
+        self.conversation.append(WHOAREYOU, query)
         response = Response(self.think(messages=self.conversation.messages()))
 
         logger.info(f"using {response.tokens} tokens")
@@ -124,22 +137,22 @@ class Agent:
     def chat(self):
         print(f"{WHOAMI} Chat (type 'exit' to quit)")
         while True:
-            prompt = input(f"{WHOAREYOU}: ")
-            if prompt.strip() == "":
+            query = self.input(f"{WHOAREYOU}: ")
+            if query.strip() == "":
                 continue  # ignore empty user input
-            elif self.scan_commands(prompt):
+            elif self.scan_commands(query):
                 continue  # command was handled by scan_commands
-            elif prompt.lower() == "exit":
+            elif query.lower() == "exit":
                 self.say("Goodbye")
                 break
             else:
-                self.process_message(prompt)
+                self.process_message(query)
 
-    def muse(self, prompt: str):
+    def muse(self, query: str):
         """
         think, but without the conversation context
         """
-        output = self.llm(prompt, max_tokens=None, stop=[f"{WHOAREYOU}:"])
+        output = self.llm(query, max_tokens=None, stop=[f"{WHOAREYOU}:"])
         return output["choices"][0]["text"].strip()
 
     def think(self, messages: list[dict] = []):
@@ -160,13 +173,13 @@ class Agent:
         )
 
     def __system_prompt(self) -> dict:
-        prompt = self.persona.prompt + "\n"
-        prompt += "Use any of the following tools:\n"
-        prompt += "\n".join([str(tool) for tool in ToolBox.tools])
+        system_prompt = self.persona.prompt + "\n"
+        system_prompt += "Use any of the following tools:\n"
+        system_prompt += "\n".join([str(tool) for tool in ToolBox.tools])
 
         return {
             "role": "system",
-            "content": prompt.strip(),
+            "content": system_prompt.strip(),
         }
 
     def __list_tools(self) -> None:

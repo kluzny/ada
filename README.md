@@ -32,8 +32,8 @@ $ python main.py # a minimal REPL for the Agent
 
 ## Roadmap
 
-- switch to prompt_toolkit
-- bash style history
+- progress bar for model download
+- command autocomplete
 - resumable/forkable conversations
 - multi-step tasks
 - configurable system prompts

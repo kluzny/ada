@@ -14,11 +14,14 @@ class Config:
             return json.load(f)
 
     def log_level(self) -> int:
-        level = self.loaded["log_level"]
+        level = self.loaded["log_level"] if "log_level" in self.loaded else "WARNING"
         return getattr(logging, level)
 
     def record(self) -> bool:
-        return self.loaded["record"]
+        return "record" in self.loaded and self.loaded["record"]
+
+    def history(self) -> bool:
+        return "history" in self.loaded and self.loaded["history"]
 
     def __model(self) -> dict:
         return self.loaded["model"]
