@@ -12,19 +12,14 @@ class Model:
     CACHE_DIR = "models"
     CHUNK_SIZE = 1024  # 1kb
 
-    url = None
-    name = None
-    path = None
-
     def __init__(self, url: str):
         self.url = url
         self.name = url.split("/")[-1]
         logger.debug(f"using {self.name}")
         self.path = os.path.join(self.CACHE_DIR, self.name)
+        self.__init_model()
 
-        self.prepare()
-
-    def prepare(self):
+    def __init_model(self):
         os.makedirs(self.CACHE_DIR, exist_ok=True)
 
         if not os.path.exists(self.path):
@@ -53,5 +48,5 @@ class Model:
                 nonlocal_downloaded = [0]  # hacky mutable accumulator
 
                 with ProgressBar() as pb:
-                    for done in pb(download_iterable(), total=total, label=self.path):
+                    for _done in pb(download_iterable(), total=total, label=self.path):
                         pass
