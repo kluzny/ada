@@ -6,3 +6,4 @@ models/*
 conversations/*
 !conversations/.gitkeep
 .ada_history
+tmp

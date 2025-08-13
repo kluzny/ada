@@ -1,6 +1,8 @@
 import os
 import urllib.request
 
+from prompt_toolkit.shortcuts import ProgressBar
+
 from ada.logger import build_logger
 
 logger = build_logger(__name__)
@@ -8,6 +10,7 @@ logger = build_logger(__name__)
 
 class Model:
     CACHE_DIR = "models"
+    CHUNK_SIZE = 1024  # 1kb
 
     url = None
     name = None
@@ -26,7 +29,29 @@ class Model:
 
         if not os.path.exists(self.path):
             logger.info(f"downloading from {self.url}...")
-            urllib.request.urlretrieve(self.url, self.path)
+            self.__download_model()
             logger.info(f"saved to {self.path}")
         else:
             logger.info(f"exists at {self.path}")
+
+    def __download_model(self) -> None:
+        with urllib.request.urlopen(self.url) as response:
+            content_length = int(response.getheader("Content-Length", 0))
+            total = round(content_length / self.CHUNK_SIZE)
+
+            with open(self.path, "wb") as f:
+                # wrap an iterable that yields chunk sizes
+                def download_iterable():
+                    while True:
+                        chunk = response.read(self.CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        nonlocal_downloaded[0] += len(chunk)
+                        yield nonlocal_downloaded[0]
+
+                nonlocal_downloaded = [0]  # hacky mutable accumulator
+
+                with ProgressBar() as pb:
+                    for done in pb(download_iterable(), total=total, label=self.path):
+                        pass
