@@ -32,7 +32,6 @@ $ python main.py # a minimal REPL for the Agent
 
 ## Roadmap
 
-- switch to prompt_toolkit
 - bash style history
 - resumable/forkable conversations
 - multi-step tasks
