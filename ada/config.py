@@ -5,11 +5,11 @@ import json
 class Config:
     DEFAULT_PATH = "config.json"
 
-    def __init__(self, path: str = None):
-        self.config_path = path or self.DEFAULT_PATH
-        self.loaded = self.__load(self.config_path)
+    def __init__(self, path: str | None = None):
+        self.config_path: str = path or self.DEFAULT_PATH
+        self.loaded: dict = self.__load(self.config_path)
 
-    def __load(self, path: str):
+    def __load(self, path: str) -> dict:
         with open(path, "r") as f:
             return json.load(f)
 
