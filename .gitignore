@@ -3,6 +3,8 @@ __pycache__
 config.json
 models/*
 !models/.gitkeep
+memories/*
+!memories/.gitkeep
 conversations/*
 !conversations/.gitkeep
 .ada_history

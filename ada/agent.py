@@ -2,6 +2,9 @@ from llama_cpp import Llama
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.history import FileHistory
 
+from asyncio import TaskGroup, Queue, AbstractEventLoop, to_thread
+from asyncio.exceptions import CancelledError
+
 from ada.config import Config
 from ada.model import Model
 from ada.conversation import Conversation
@@ -17,6 +20,10 @@ WHOAREYOU = "USER"
 logger = build_logger(__name__)
 
 
+class TerminateTaskGroup(Exception):
+    """Exception raised to terminate a task group."""
+
+
 class Agent:
     """
     An interactive llm agent
@@ -30,8 +37,7 @@ class Agent:
         self.max_content_length: int = config.model_tokens()
         self.llm: Llama = self.build_llm()
         self.conversation: Conversation = Conversation(record=config.record())
-        self.persona: Persona = Personas.DEFAULT
-        logger.info(f"using {self.persona.name} persona")
+        self.persona = Personas.DEFAULT
         self.__init_prompt(config)
 
     def __init_prompt(self, config: Config) -> None:
@@ -45,7 +51,7 @@ class Agent:
     def say(self, input: str) -> None:
         print(f"{WHOAMI}: {input}")
 
-    def switch_persona(self, name: str) -> bool:
+    async def switch_persona(self, name: str) -> bool:
         """
         Switch to a different persona by name.
 
@@ -62,8 +68,9 @@ class Agent:
             )
             return False
 
-        self.persona = persona
         logger.info(f"Switched to persona: {persona}")
+        # TODO: has to switch to a queue message to the chat thread
+        # await self.__activate_persona(persona)
         return True
 
     def build_llm(self):
@@ -134,10 +141,31 @@ class Agent:
         self.conversation.append_response(WHOAMI, response)
         self.say(response.body)
 
-    def chat(self):
-        print(f"{WHOAMI} Chat (type 'exit' to quit)")
+    async def event_consumer(self, queue: Queue):
+        """Consumes file system events."""
         while True:
-            query = self.input(f"{WHOAREYOU}: ")
+            event_type, file_path = await queue.get()
+            logger.info(f"Event: {event_type} - {file_path}")
+            queue.task_done()
+
+    async def run(self, loop: AbstractEventLoop) -> None:
+        logger.info("running")
+        queue = Queue()
+
+        async with TaskGroup() as tg:
+            tg.create_task(self.event_consumer(queue))
+            tg.create_task(self.activate_persona(Personas.DEFAULT, loop, queue))
+            tg.create_task(self.chat())
+
+        await self.persona.unwatch()  # TODO: can we auto clean this up
+
+        logger.info("stopping")
+
+    async def chat(self):
+        print(f"{WHOAMI} Chat (type 'exit' to quit)")
+
+        while True:
+            query = await to_thread(self.input, f"{WHOAREYOU}: ")
             if query.strip() == "":
                 continue  # ignore empty user input
             elif self.scan_commands(query):
@@ -147,6 +175,8 @@ class Agent:
                 break
             else:
                 self.process_message(query)
+
+        raise TerminateTaskGroup
 
     def muse(self, query: str):
         """
@@ -186,3 +216,12 @@ class Agent:
         output = "Available tools:\n\n"
         output += "\n".join([str(tool) for tool in ToolBox.tools])
         self.say(output)
+
+    # TODO: add type hints
+    async def activate_persona(self, persona: Persona, loop, queue) -> None:
+        if self.persona is not None:
+            await persona.unwatch()
+
+        self.persona = persona
+        logger.info(f"using {self.persona.name} persona")
+        await self.persona.watch(loop, queue)
