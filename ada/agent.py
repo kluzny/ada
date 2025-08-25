@@ -3,7 +3,6 @@ from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.history import FileHistory
 
 from asyncio import TaskGroup, Queue, AbstractEventLoop, to_thread
-from asyncio.exceptions import CancelledError
 
 from ada.config import Config
 from ada.model import Model
@@ -13,15 +12,12 @@ from ada.response import Response
 from ada.persona import Persona
 from ada.personas import Personas
 from ada.tool_box import ToolBox
+from ada.exceptions import TerminateTaskGroup
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
 
 logger = build_logger(__name__)
-
-
-class TerminateTaskGroup(Exception):
-    """Exception raised to terminate a task group."""
 
 
 class Agent:
