@@ -8,7 +8,6 @@ from ada.filesystem.async_file_watcher import AsyncFileWatcher
 logger = build_logger(__name__)
 
 
-# TODO: move to sub module with this class
 class DirectoryWatcher:
     """Wrapper around watchdog observer with async integration."""
 
@@ -31,7 +30,6 @@ class DirectoryWatcher:
             await self.stop()
 
     async def stop(self):
-        """Stop watching the directory."""
         if self.observer.is_alive():
             logger.info("stopping directory watcher...")
             self.observer.stop()
