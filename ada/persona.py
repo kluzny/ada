@@ -22,9 +22,13 @@ class Persona:
         self.description = description
         self.prompt = prompt
         self.watcher = None
+        self.cached_memories = None
 
-    def _memory_path(self) -> Path:
-        return Path(os.path.join(self.MEMORIES_PATH, self.name))
+    def clear_cached_memories(self) -> None:
+        self.cached_memories = None
+
+    def get_prompt(self) -> str:
+        return f"{self.prompt}\n{self._cached_memories()}".strip()
 
     async def watch(self, loop: AbstractEventLoop, queue: Queue) -> None:
         path = self._memory_path()
@@ -36,6 +40,27 @@ class Persona:
     async def unwatch(self) -> None:
         if self.watcher is not None:
             await self.watcher.stop()
+
+    def _memory_path(self) -> Path:
+        return Path(os.path.join(self.MEMORIES_PATH, self.name))
+
+    def _get_memory_files(self) -> list[str]:
+        """stringified paths, to allow for alpha sorting"""
+        return sorted([str(p) for p in self._memory_path().rglob("*") if p.is_file()])
+
+    def _get_memories(self) -> list[str]:
+        memories = []
+        for path in self._get_memory_files():
+            with open(path, "r") as memory:
+                memories.append(memory.read().strip())
+        return memories
+
+    # TODO: maybe replace with functools
+    def _cached_memories(self) -> str:
+        if self.cached_memories is None:
+            self.cached_memories = "\n".join(self._get_memories())
+
+        return self.cached_memories
 
     def __str__(self) -> str:
         return f"{self.name}: {self.description}"

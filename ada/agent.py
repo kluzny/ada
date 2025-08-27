@@ -199,7 +199,7 @@ class Agent:
         )
 
     def __system_prompt(self) -> dict:
-        system_prompt = self.persona.prompt + "\n"
+        system_prompt = self.persona.get_prompt() + "\n"
         system_prompt += "Use any of the following tools:\n"
         system_prompt += "\n".join([str(tool) for tool in ToolBox.tools])
 
