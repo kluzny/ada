@@ -213,8 +213,12 @@ class Agent:
         output += "\n".join([str(tool) for tool in ToolBox.tools])
         self.say(output)
 
-    # TODO: add type hints
-    async def activate_persona(self, persona: Persona, loop, queue) -> None:
+    async def activate_persona(
+        self,
+        persona: Persona,
+        loop: AbstractEventLoop,
+        queue: Queue,
+    ) -> None:
         if self.persona is not None:
             await persona.unwatch()
 
