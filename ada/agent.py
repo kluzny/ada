@@ -148,14 +148,21 @@ class Agent:
         logger.info("running")
         queue = Queue()
 
-        async with TaskGroup() as tg:
-            tg.create_task(self.event_consumer(queue))
-            tg.create_task(self.activate_persona(Personas.DEFAULT, loop, queue))
-            tg.create_task(self.chat())
+        try:
+            async with TaskGroup() as tg:
+                tg.create_task(self.event_consumer(queue))
+                tg.create_task(self.activate_persona(Personas.DEFAULT, loop, queue))
+                tg.create_task(self.chat())
 
-        await self.persona.unwatch()  # TODO: can we auto clean this up
-
-        logger.info("stopping")
+            await self.persona.unwatch()  # TODO: can we auto clean this up
+        except ExceptionGroup as eg:
+            if any(isinstance(e, TerminateTaskGroup) for e in eg.exceptions):
+                logger.info("normal exit")
+            else:
+                logger.error(f"unhandled exception group: {eg}")
+                raise
+        finally:
+            logger.info("stopping")
 
     async def chat(self):
         print(f"{WHOAMI} Chat (type 'exit' to quit)")
