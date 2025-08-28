@@ -1,6 +1,7 @@
 import os
 
 from asyncio import Queue, AbstractEventLoop
+from functools import cached_property
 from pathlib import Path
 
 from ada.logger import build_logger
@@ -22,13 +23,12 @@ class Persona:
         self.description = description
         self.prompt = prompt
         self.watcher = None
-        self.cached_memories = None
 
     def clear_cached_memories(self) -> None:
-        self.cached_memories = None
+        del self._cached_memories
 
     def get_prompt(self) -> str:
-        return f"{self.prompt}\n{self._cached_memories()}".strip()
+        return f"{self.prompt}\n{self._cached_memories}".strip()
 
     async def watch(self, loop: AbstractEventLoop, queue: Queue) -> None:
         path = self._memory_path()
@@ -55,12 +55,9 @@ class Persona:
                 memories.append(memory.read().strip())
         return memories
 
-    # TODO: maybe replace with functools
+    @cached_property
     def _cached_memories(self) -> str:
-        if self.cached_memories is None:
-            self.cached_memories = "\n".join(self._get_memories())
-
-        return self.cached_memories
+        return "\n".join(self._get_memories())
 
     def __str__(self) -> str:
         return f"{self.name}: {self.description}"

@@ -80,7 +80,7 @@ def test_persona_clear_cached_memories():
         prompt="This is a test.",
     )
 
-    persona.cached_memories = "foo"
+    persona._cached_memories = "foo"
     assert persona.get_prompt() == "This is a test.\nfoo"
 
     persona.clear_cached_memories()
