@@ -10,7 +10,6 @@ from ada.filesystem.directory_watcher import DirectoryWatcher
 logger = build_logger(__name__)
 
 
-# TODO: memories need to be wrapped in some sort of tag like <command></command> so they don't bleed together
 class Persona:
     """
     A persona represents a specific AI assistant personality and behavior.
@@ -18,6 +17,12 @@ class Persona:
     """
 
     MEMORIES_PATH = "memories"
+    WRAPPER_TAG = "memory"
+    START_TAG = f"<{WRAPPER_TAG}>"
+    END_TAG = f"</{WRAPPER_TAG}>"
+    INSTRUCTION = (
+        f"IMPORTANT: Additional instructions are wrapped with {START_TAG}{END_TAG}"
+    )
 
     def __init__(self, name: str, description: str = "", prompt: str = ""):
         self.name = name
@@ -30,7 +35,12 @@ class Persona:
             del self._cached_memories
 
     def get_prompt(self) -> str:
-        return f"{self.prompt}\n{self._cached_memories}".strip()
+        prompts = [self.prompt]
+        if len(self._cached_memories) > 0:
+            prompts.append("\n" + self.INSTRUCTION)
+            prompts.append(self._cached_memories)
+
+        return "\n".join(prompts)
 
     async def watch(self, loop: AbstractEventLoop, queue: Queue) -> None:
         path = self._memory_path()
@@ -50,16 +60,26 @@ class Persona:
         """stringified paths, to allow for alpha sorting"""
         return sorted([str(p) for p in self._memory_path().rglob("*") if p.is_file()])
 
-    def _get_memories(self) -> list[str]:
+    def _commands(self) -> list[str]:
         memories = []
         for path in self._get_memory_files():
             with open(path, "r") as memory:
-                memories.append(memory.read().strip())
+                contents = memory.read()
+
+                if len(contents) > 0:
+                    if contents[-1] == "\n":
+                        padding = ""
+                    else:
+                        padding = "\n"
+
+                    memories.append(
+                        f"{self.START_TAG}\n{contents}{padding}{self.END_TAG}\n"
+                    )
         return memories
 
     @cached_property
     def _cached_memories(self) -> str:
-        return "\n".join(self._get_memories())
+        return "\n".join(self._commands())
 
     def __str__(self) -> str:
         return f"{self.name}: {self.description}"

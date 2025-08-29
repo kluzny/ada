@@ -14,6 +14,7 @@ from ada.personas import Personas
 from ada.tool_box import ToolBox
 from ada.exceptions import TerminateTaskGroup
 from ada.looper import Looper
+from ada.formatter import block
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
@@ -116,7 +117,13 @@ class Agent:
             self.__list_tools()
             return True
         elif neat == "prompt":
-            self.say("\nSYSTEM_PROMPT: " + self.__system_prompt()["content"])
+            self.say(
+                "\n"
+                + block("SYSTEM PROMPT")
+                + self.__system_prompt()["content"]
+                + "\n"
+                + block("END SYSTEM PROMPT").strip()
+            )
             return True
         elif neat == "modes" or neat == "mode":
             current = f"Current mode is:\n\n{self.persona}\n"
@@ -221,6 +228,6 @@ class Agent:
         if self.persona is not None:
             self.persona.unwatch()
 
-        logger.info(f"swapping to persona [ {persona} ]")
+        logger.info(f"swapping to persona [{persona}]")
         self.persona = persona
         looper.tg.create_task(self.persona.watch(looper.loop, looper.queue))
