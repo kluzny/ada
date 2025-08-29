@@ -13,6 +13,7 @@ from ada.persona import Persona
 from ada.personas import Personas
 from ada.tool_box import ToolBox
 from ada.exceptions import TerminateTaskGroup
+from ada.looper import Looper
 
 WHOAMI = "ADA"
 WHOAREYOU = "USER"
@@ -31,7 +32,7 @@ class Agent:
         logger.info("initializing agent")
         self.model: Model = Model(config.model_url())
         self.max_content_length: int = config.model_tokens()
-        self.llm: Llama = self.build_llm()
+        self.llm: Llama = self.__build_llm()
         self.conversation: Conversation = Conversation(record=config.record())
         self.persona = Personas.DEFAULT
         self.__init_prompt(config)
@@ -44,10 +45,29 @@ class Agent:
         else:
             self.input = prompt
 
+    async def run(self, loop: AbstractEventLoop) -> None:
+        logger.info("running")
+        try:
+            async with TaskGroup() as tg:
+                looper = Looper(tg=tg, loop=loop, queue=Queue())
+                self.__swap_persona(looper, Personas.DEFAULT)
+                tg.create_task(self.__event_consumer(looper.queue))
+                tg.create_task(self.__chat(looper))
+
+            self.persona.unwatch()  # TODO: can we auto clean this up
+        except ExceptionGroup as eg:
+            if any(isinstance(e, TerminateTaskGroup) for e in eg.exceptions):
+                logger.info("normal exit")
+            else:
+                logger.error(f"unhandled exception group: {eg}")
+                raise
+        finally:
+            logger.info("stopping")
+
     def say(self, input: str) -> None:
         print(f"{WHOAMI}: {input}")
 
-    async def switch_persona(self, name: str) -> bool:
+    async def __switch_persona(self, name: str, looper: Looper) -> bool:
         """
         Switch to a different persona by name.
 
@@ -64,12 +84,10 @@ class Agent:
             )
             return False
 
-        logger.info(f"Switched to persona: {persona}")
-        # TODO: has to switch to a queue message to the chat thread
-        # await self.__activate_persona(persona)
+        self.__swap_persona(looper, persona)
         return True
 
-    def build_llm(self):
+    def __build_llm(self):
         return Llama(
             model_path=self.model.path,
             n_ctx=self.max_content_length,
@@ -77,7 +95,7 @@ class Agent:
             verbose=False,  # TODO: can we capture the verbose output with our logger?
         )
 
-    def scan_commands(self, query: str) -> bool:
+    async def __scan_commands(self, query: str, looper: Looper) -> bool:
         """
         Scan for and handle special commands.
 
@@ -98,7 +116,7 @@ class Agent:
             self.__list_tools()
             return True
         elif neat == "prompt":
-            self.say("SYSTEM_PROMPT: " + self.__system_prompt()["content"])
+            self.say("\nSYSTEM_PROMPT: " + self.__system_prompt()["content"])
             return True
         elif neat == "modes" or neat == "mode":
             current = f"Current mode is:\n\n{self.persona}\n"
@@ -111,8 +129,9 @@ class Agent:
             return True
         elif query.lower().startswith("switch "):
             persona_name = query[7:].strip()  # Remove "switch " prefix
-            if self.switch_persona(persona_name):
-                self.say(f"Switched to persona: {self.persona.name}")
+            switched = await self.__switch_persona(persona_name, looper)
+            if switched:
+                self.say(f"Switched to persona {self.persona.name}")
             else:
                 self.say(
                     f"Persona '{persona_name}' not found. Use 'modes' to see available personas."
@@ -120,7 +139,7 @@ class Agent:
             return True
         return False
 
-    def process_message(self, query: str):
+    def __process_message(self, query: str):
         """
         Process a user message and generate a response.
 
@@ -128,7 +147,7 @@ class Agent:
             query: The user's input message
         """
         self.conversation.append(WHOAREYOU, query)
-        response = Response(self.think(messages=self.conversation.messages()))
+        response = Response(self.__think(messages=self.conversation.messages()))
 
         logger.info(f"using {response.tokens} tokens")
         if response.tokens >= 0.75 * self.max_content_length:
@@ -137,58 +156,36 @@ class Agent:
         self.conversation.append_response(WHOAMI, response)
         self.say(response.body)
 
-    async def event_consumer(self, queue: Queue):
+    async def __event_consumer(self, queue: Queue):
         """Consumes file system events."""
         while True:
             event_type, file_path = await queue.get()
             logger.info(f"Event: {event_type} - {file_path}")
+            self.__rebuild_persona()
             queue.task_done()
 
-    async def run(self, loop: AbstractEventLoop) -> None:
-        logger.info("running")
-        queue = Queue()
+    def __rebuild_persona(self) -> None:
+        logger.info(f"rebuilding persona {self.persona.name}")
+        self.persona.clear_cached_memories()
 
-        try:
-            async with TaskGroup() as tg:
-                tg.create_task(self.event_consumer(queue))
-                tg.create_task(self.activate_persona(Personas.DEFAULT, loop, queue))
-                tg.create_task(self.chat())
-
-            await self.persona.unwatch()  # TODO: can we auto clean this up
-        except ExceptionGroup as eg:
-            if any(isinstance(e, TerminateTaskGroup) for e in eg.exceptions):
-                logger.info("normal exit")
-            else:
-                logger.error(f"unhandled exception group: {eg}")
-                raise
-        finally:
-            logger.info("stopping")
-
-    async def chat(self):
+    async def __chat(self, looper: Looper):
         print(f"{WHOAMI} Chat (type 'exit' to quit)")
 
         while True:
             query = await to_thread(self.input, f"{WHOAREYOU}: ")
             if query.strip() == "":
                 continue  # ignore empty user input
-            elif self.scan_commands(query):
-                continue  # command was handled by scan_commands
+            elif await self.__scan_commands(query, looper):
+                continue  # command was handled by __scan_commands
             elif query.lower() == "exit":
                 self.say("Goodbye")
                 break
             else:
-                self.process_message(query)
+                self.__process_message(query)
 
         raise TerminateTaskGroup
 
-    def muse(self, query: str):
-        """
-        think, but without the conversation context
-        """
-        output = self.llm(query, max_tokens=None, stop=[f"{WHOAREYOU}:"])
-        return output["choices"][0]["text"].strip()
-
-    def think(self, messages: list[dict] = []):
+    def __think(self, messages: list[dict] = []):
         messages.insert(0, self.__system_prompt())
 
         return self.llm.create_chat_completion(
@@ -220,15 +217,10 @@ class Agent:
         output += "\n".join([str(tool) for tool in ToolBox.tools])
         self.say(output)
 
-    async def activate_persona(
-        self,
-        persona: Persona,
-        loop: AbstractEventLoop,
-        queue: Queue,
-    ) -> None:
+    def __swap_persona(self, looper: Looper, persona: Persona) -> None:
         if self.persona is not None:
-            await persona.unwatch()
+            self.persona.unwatch()
 
+        logger.info(f"swapping to persona [ {persona} ]")
         self.persona = persona
-        logger.info(f"using {self.persona.name} persona")
-        await self.persona.watch(loop, queue)
+        looper.tg.create_task(self.persona.watch(looper.loop, looper.queue))

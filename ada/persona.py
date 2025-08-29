@@ -10,6 +10,7 @@ from ada.filesystem.directory_watcher import DirectoryWatcher
 logger = build_logger(__name__)
 
 
+# TODO: memories need to be wrapped in some sort of tag like <command></command> so they don't bleed together
 class Persona:
     """
     A persona represents a specific AI assistant personality and behavior.
@@ -25,7 +26,8 @@ class Persona:
         self.watcher = None
 
     def clear_cached_memories(self) -> None:
-        del self._cached_memories
+        if hasattr(self, "_cached_memories"):
+            del self._cached_memories
 
     def get_prompt(self) -> str:
         return f"{self.prompt}\n{self._cached_memories}".strip()
@@ -37,9 +39,9 @@ class Persona:
         self.watcher = DirectoryWatcher(path, loop, queue)
         await self.watcher.start()
 
-    async def unwatch(self) -> None:
+    def unwatch(self) -> None:
         if self.watcher is not None:
-            await self.watcher.stop()
+            self.watcher.stop()
 
     def _memory_path(self) -> Path:
         return Path(os.path.join(self.MEMORIES_PATH, self.name))

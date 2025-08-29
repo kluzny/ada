@@ -27,11 +27,11 @@ class DirectoryWatcher:
             while self.observer.is_alive():
                 await sleep(1)
         finally:
-            await self.stop()
+            self.stop()
 
-    async def stop(self):
+    def stop(self):
         if self.observer.is_alive():
-            logger.info("stopping directory watcher...")
+            logger.info(f"stopped watching directory tree: {self.path.resolve()}")
             self.observer.stop()
             self.observer.join()
             logger.info("watcher stopped.")

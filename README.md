@@ -27,18 +27,17 @@ Refer to the official documentation for your specific GPU [llama-cpp-python#inst
 ## Running
 
 ```bash
-$ python main.py # a minimal REPL for the agent 
+$ python main.py # a minimal REPL for the agent
 ```
 
 ## Personas
 
 Ada ships with some default personas that define system prompts for various modes of operation.
 
-* **default** - A standard chat assistant with no specific customizations
-* **jester** - The **default**, but trained poorly, as a joke.
+- **default** - A standard chat assistant with no specific customizations
+- **jester** - The **default**, but trained poorly, as a joke.
 
 You can use the `mode [name]` command to change between personas or simply `modes` to see all of the available personas.
-
 
 ## Memories
 
@@ -73,3 +72,4 @@ It's ok to hallucinate in service of providing an additional *pun*portunity.
 - better tool use using explicit `tool_choice` calls
 - tools for file system access e.g. find, tree, cat, diff
 - support advanced templating for memories, possibly jinja
+- logging happens in a separate frame
