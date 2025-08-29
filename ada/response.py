@@ -22,7 +22,6 @@ class Response:
 
     source: dict
     content: str | None
-    tool_calls: str | None
     body: str
     role: str = "assistant"
     tokens: int = 0  # number of tokens used in the response
@@ -31,12 +30,12 @@ class Response:
         logger.info("initialising response with \n" + dump(source))
         self.source = source
         self.tokens = source.get("usage", {}).get("total_tokens", 0)
-        self.parse()
+        self.__parse()
 
-    def choose(self) -> dict:
+    def __choose(self) -> dict:
         return self.source["choices"][0]
 
-    def maybe_json(self, content) -> dict | str:
+    def __maybe_json(self, content) -> dict | str:
         try:
             parsed = json.loads(content)
             logger.info("content parsed as json")
@@ -45,14 +44,14 @@ class Response:
             logger.info("content treated as a string")
             return content
 
-    def parse(self) -> tuple[dict, str]:
+    def __parse(self) -> None:
         try:
-            choice = self.choose()
+            choice = self.__choose()
             message = choice["message"]
             raw_content = message["content"]
 
             if raw_content is not None:
-                parsed_content = self.maybe_json(raw_content)
+                parsed_content = self.__maybe_json(raw_content)
 
                 if isinstance(parsed_content, str):
                     # cooerce string to dict just to simplify downstream processing
@@ -60,7 +59,7 @@ class Response:
                     body = parsed_content
                 elif isinstance(parsed_content, dict):
                     content = raw_content
-                    body = self.format(parsed_content)
+                    body = self.__format(parsed_content)
                 else:
                     raise TypeError("unexpected type for content")
             else:
@@ -68,8 +67,7 @@ class Response:
                 body = ""
 
             if "tool_calls" in message:
-                self.tool_calls = message["tool_calls"]
-                body += self.__handle_tool_calls(self.tool_calls)
+                body += self.__handle_tool_calls(message["tool_calls"])
 
             self.content = content
             self.body = body
@@ -98,7 +96,7 @@ class Response:
 
         return "\n".join(returns)
 
-    def format(self, parsed) -> str:
+    def __format(self, parsed) -> str:
         output = []
 
         if "text" in parsed:
@@ -121,7 +119,7 @@ class Response:
                 output.append(f"```\n{parsed['code']}\n```")
 
         if len(output) == 0:
-            logger.error(f"unable to extract keys {output.keys()}")
+            logger.error(f"unable to extract keys {parsed.keys()}")
             logger.info("\n" + dump(parsed))
 
             return NULL_OUTPUT
