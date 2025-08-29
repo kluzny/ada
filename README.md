@@ -41,7 +41,7 @@ You can use the `mode [name]` command to change between personas or simply `mode
 
 ## Memories
 
-You can add custom context to the various personas using the `memories` directory. Files are organized by persona name and loaded alphabetically after the core system prompt. Memories use the `system` role. The exact `system` behaviour is determined by the specific model you are using. Memories are read as plain text, but your LLM may support text, markdown, json or other file formats.
+You can add custom context to the various personas using the `memories` directory. Files are organized by persona name and loaded alphabetically after the core system prompt. Memories use the `system` role. The exact `system` behaviour is determined by the specific model you are using. Memories are read as plain text, but your LLM may support text, markdown, json or other file formats. Memories are hot reloaded based on which persona is active.
 
 ```bash
 # ./memories/default/001_important_stuff_to_always_place_in_context.txt
