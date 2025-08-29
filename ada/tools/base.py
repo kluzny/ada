@@ -5,7 +5,7 @@ This module provides the Base class that all tools should inherit from.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Callable, Any
 
 
 class Base(ABC):
@@ -21,7 +21,7 @@ class Base(ABC):
         self,
         name: str,
         description: str,
-        parameters: Optional[dict[str, any]] = None,
+        parameters: Optional[dict[str, Any]] = None,
     ):
         """
         Initialize the Base tool.
@@ -36,7 +36,7 @@ class Base(ABC):
         self.parameters = parameters or {}
 
     @abstractmethod
-    def call(self, *args, **kwargs) -> any:
+    def call(self, *args, **kwargs) -> Any:
         """
         Execute the tool's main functionality.
 
@@ -52,7 +52,7 @@ class Base(ABC):
         """
         raise NotImplementedError("Subclasses must implement the call method")
 
-    def definition(self) -> dict[str, any]:
+    def definition(self) -> dict[str, Any]:
         """
         Get the tool's definition in the standard format.
 
@@ -73,7 +73,7 @@ class Base(ABC):
             },
         }
 
-    def create_global_function(self) -> callable:
+    def create_global_function(self) -> Callable:
         """
         Create a global function for a tool instance.
 
