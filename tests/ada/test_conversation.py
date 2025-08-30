@@ -150,6 +150,8 @@ def test_conversation_record_filename_format():
     """Test that record filename follows timestamp-uuid.json format"""
     with tempfile.TemporaryDirectory() as temp_dir:
         conversation = Conversation(record=True, storage_path=temp_dir)
+
+        assert conversation.record_path is not None
         filename = os.path.basename(conversation.record_path)
 
         # Check format: timestamp-uuid.json
