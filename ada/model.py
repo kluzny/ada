@@ -49,5 +49,5 @@ class Model:
                 nonlocal_downloaded = [0]  # hacky mutable accumulator
 
                 with ProgressBar() as pb:
-                    for done in pb(download_iterable(), total=total, label=self.path):
+                    for _done in pb(download_iterable(), total=total, label=self.path):
                         pass

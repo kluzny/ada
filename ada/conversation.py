@@ -37,17 +37,15 @@ class Conversation(BaseModel):
         super().__init__(**data)
 
         if self.record:
-            self.__initialize_storage_path()
-            self.record_path = self.storage_path + "/" + self.__generate_file_name()
+            self.__init_storage_path()
+            logger.info(f"recording conversation to: {self.storage_path}")
+            self.record_path = self.storage_path + "/" + self.__generate_file_name()  # pyright: ignore[reportOptionalOperand]
 
-    def __initialize_storage_path(self):
+    def __init_storage_path(self) -> None:
         if self.storage_path is None:
             self.storage_path = self.STORAGE_PATH
 
-        # Ensure conversations directory exists
-        conversations_dir = Path(self.storage_path)
-        conversations_dir.mkdir(exist_ok=True)
-        logger.info(f"recording conversation to: {self.storage_path}")
+        Path(self.storage_path).mkdir(exist_ok=True)
 
     def append(self, author: str, body: str):
         entry = Entry(author=author, body=body)
@@ -95,7 +93,7 @@ class Conversation(BaseModel):
             history_data.append(entry.model_dump())
 
         logger.info(f"saving to record file: {self.record_path}")
-        with open(self.record_path, "w") as f:
+        with open(self.record_path, "w") as f:  # pyright: ignore[reportCallIssue,reportArgumentType]
             json.dump(history_data, f, indent=4)
 
     def __remove_record(self):

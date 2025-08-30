@@ -1,4 +1,5 @@
 import logging
+
 from ada.config import Config
 
 
@@ -14,9 +15,9 @@ def test_config_load_and_access():
     assert not config.history()
     assert (
         config.model_url()
-        == "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf"
+        == "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf"
     )
-    assert config.model_tokens() == 2048
+    assert config.model_tokens() == 1024
 
 
 def test_config_minimum_viable_defaults():
