@@ -2,6 +2,7 @@
 
 clean:
 	rm -rf conversations/*.json
+	rm -rf logs/*.log
 
 purge: clean
 	rm -rf models/*.gguf

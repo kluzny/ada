@@ -7,5 +7,7 @@ memories/*
 !memories/.gitkeep
 conversations/*
 !conversations/.gitkeep
+logs/*
+!logs/.gitkeep
 .ada_history
 tmp
