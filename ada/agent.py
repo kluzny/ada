@@ -98,21 +98,21 @@ class Agent:
         Returns:
             Initialized backend instance
         """
-        backend_type = config.backend_type()
+        backend = config.backend()
         backend_config = config.backend_config()
 
-        logger.info(f"building backend: {backend_type}")
+        logger.info(f"building backend: {backend}")
 
-        if backend_type == "llama-cpp":
+        if backend == "llama-cpp":
             # For llama-cpp, we need to use the model path from the Model class
             # which handles downloading
             model = Model(backend_config["model_url"])
             backend_config["model_path"] = model.path
             return LlamaCppBackend(backend_config)
-        elif backend_type == "ollama":
+        elif backend == "ollama":
             return OllamaBackend(backend_config)
         else:
-            raise ValueError(f"Unknown backend type: {backend_type}")
+            raise ValueError(f"Unknown backend: {backend}")
 
     async def __scan_commands(self, query: str, looper: Looper) -> bool:
         """

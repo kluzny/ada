@@ -24,12 +24,12 @@ class Config:
     def history(self) -> bool:
         return "history" in self.loaded and self.loaded["history"]
 
-    def backend_type(self) -> str:
+    def backend(self) -> str:
         """
-        Get the backend type from configuration.
+        Get the backend from configuration.
 
         Returns:
-            Backend type: "llama-cpp" or "ollama" (default: "llama-cpp")
+            Backend: "llama-cpp" or "ollama" (default: "llama-cpp")
         """
         return self.loaded.get("backend", "llama-cpp")
 
@@ -77,9 +77,9 @@ class Config:
 
     def model_tokens(self) -> int:
         """Get the token context size for the current backend."""
-        backend_type = self.backend_type()
+        backend = self.backend()
 
-        if backend_type == "llama-cpp":
+        if backend == "llama-cpp":
             llama_config = self.__get_llama_cpp_config()
             model_name = llama_config.get("model")
             if not model_name:
@@ -87,7 +87,7 @@ class Config:
 
             model_def = self.__find_llama_cpp_model(model_name)
             return model_def.get("tokens", 2048)
-        elif backend_type == "ollama":
+        elif backend == "ollama":
             ollama_config = self.__get_ollama_config()
             return ollama_config.get("tokens", 2048)
         else:
@@ -100,9 +100,9 @@ class Config:
         Returns:
             Dictionary with backend configuration parameters
         """
-        backend_type = self.backend_type()
+        backend = self.backend()
 
-        if backend_type == "llama-cpp":
+        if backend == "llama-cpp":
             llama_config = self.__get_llama_cpp_config()
             model_name = llama_config.get("model")
             if not model_name:
@@ -117,14 +117,14 @@ class Config:
                 "n_threads": llama_config.get("threads", 4),
                 "verbose": llama_config.get("verbose", False),
             }
-        elif backend_type == "ollama":
+        elif backend == "ollama":
             ollama_config = self.__get_ollama_config()
             return {
                 "model": ollama_config.get("model", "llama2"),
                 "host": ollama_config.get("url", "http://localhost:11434"),
             }
         else:
-            raise ValueError(f"Unknown backend type: {backend_type}")
+            raise ValueError(f"Unknown backend: {backend}")
 
 
 if __name__ == "__main__":
