@@ -27,23 +27,44 @@ class LlamaCppBackend(Base):
 
         Args:
             config: Configuration dictionary with keys:
-                - model_url: URL to download the GGUF model file
-                - n_ctx: Context window size (default: 2048)
-                - n_threads: Number of threads to use (default: 4)
+                - model: Name of the model to use
+                - models: Array of model definitions with name, url, tokens
+                - threads: Number of threads to use (default: 4)
                 - verbose: Whether to enable verbose output (default: False)
         """
         super().__init__(config)
 
-        model_url = config.get("model_url")
+        # Get the model name
+        model_name = config.get("model")
+        if not model_name:
+            raise ValueError("'model' is required in llama-cpp backend configuration")
+
+        # Find the model definition in the models array
+        models = config.get("models", [])
+        model_def = None
+        for m in models:
+            if m.get("name") == model_name:
+                model_def = m
+                break
+
+        if not model_def:
+            raise ValueError(f"Model '{model_name}' not found in models array")
+
+        # Extract configuration
+        model_url = model_def.get("url")
         if not model_url:
-            raise ValueError("model_url is required for LlamaCppBackend")
+            raise ValueError(f"Model '{model_name}' is missing 'url'")
 
         # Use Model class to handle downloading and caching
         self.model = Model(model_url)
         model_path = self.model.path
 
-        n_ctx = config.get("n_ctx", 2048)
-        n_threads = config.get("n_threads", 4)
+        # Store model information
+        self.model_name = model_name
+        self.models_list = models
+
+        n_ctx = model_def.get("tokens", 2048)
+        n_threads = config.get("threads", 4)
         verbose = config.get("verbose", False)
 
         logger.info(f"initializing llama.cpp with model: {model_path}")
@@ -92,6 +113,24 @@ class LlamaCppBackend(Base):
             max_tokens=max_tokens,
             stop=stop,
         )
+
+    def current_model(self) -> str:
+        """
+        Get the name of the currently active model.
+
+        Returns:
+            The name of the current model
+        """
+        return self.model_name
+
+    def available_models(self) -> list[str]:
+        """
+        Get a list of available model names from the configuration.
+
+        Returns:
+            List of model names that can be used
+        """
+        return [model.get("name") for model in self.models_list if model.get("name")]
 
     def __str__(self) -> str:
         return f"LlamaCppBackend(model={self.model.name if hasattr(self, 'model') else 'unknown'})"

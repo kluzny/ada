@@ -28,24 +28,22 @@ class OllamaBackend(Base):
         Args:
             config: Configuration dictionary with keys:
                 - model: Name of the Ollama model (e.g., "llama2", "mistral")
-                - host: Optional Ollama host URL (default: http://localhost:11434)
+                - url: Ollama server URL (default: http://localhost:11434)
+                - tokens: Context window size (for warnings)
         """
         super().__init__(config)
 
-        self.model = config.get("model")
-        if not self.model:
-            raise ValueError("model name is required for OllamaBackend")
+        self.model_name = config.get("model")
+        if not self.model_name:
+            raise ValueError("'model' is required in ollama backend configuration")
 
-        # Set custom host if provided
-        self.host = config.get("host")
-        if self.host:
-            self.client = ollama.Client(host=self.host)
-            logger.info(
-                f"initializing Ollama backend with model: {self.model}, host: {self.host}"
-            )
-        else:
-            self.client = ollama.Client()
-            logger.info(f"initializing Ollama backend with model: {self.model}")
+        # Get the Ollama server URL
+        self.url = config.get("url", "http://localhost:11434")
+
+        self.client = ollama.Client(host=self.url)
+        logger.info(
+            f"initializing Ollama backend with model: {self.model_name}, url: {self.url}"
+        )
 
     def chat_completion(
         self,
@@ -91,7 +89,7 @@ class OllamaBackend(Base):
             # Check if tools are provided
             if tools and len(tools) > 0:
                 response = self.client.chat(
-                    model=self.model,
+                    model=self.model_name,
                     messages=messages,
                     tools=tools,
                     options=options,
@@ -101,7 +99,7 @@ class OllamaBackend(Base):
                 )
             else:
                 response = self.client.chat(
-                    model=self.model,
+                    model=self.model_name,
                     messages=messages,
                     options=options,
                     format="json"
@@ -171,6 +169,28 @@ class OllamaBackend(Base):
 
         return openai_response
 
+    def current_model(self) -> str:
+        """
+        Get the name of the currently active model.
+
+        Returns:
+            The name of the current model
+        """
+        return self.model_name
+
+    def available_models(self) -> list[str]:
+        """
+        Get a list of available models from the Ollama server.
+
+        Returns:
+            List of model names available on the Ollama server
+        """
+        try:
+            models = self.client.list()
+            return [model["name"] for model in models.get("models", [])]
+        except Exception as e:
+            logger.warning(f"Failed to list models from Ollama server: {e}")
+            return [self.model_name]  # Return at least the configured model
+
     def __str__(self) -> str:
-        host_str = f", host={self.host}" if self.host else ""
-        return f"OllamaBackend(model={self.model}{host_str})"
+        return f"OllamaBackend(model={self.model_name}, url={self.url})"

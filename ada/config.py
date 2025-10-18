@@ -65,16 +65,6 @@ class Config:
 
         raise ValueError(f"Model '{model_name}' not found in llama-cpp models list")
 
-    def model_url(self) -> str:
-        """Get the model URL for llama-cpp backend."""
-        llama_config = self.__get_llama_cpp_config()
-        model_name = llama_config.get("model")
-        if not model_name:
-            raise ValueError("Missing 'model' in llama-cpp configuration")
-
-        model_def = self.__find_llama_cpp_model(model_name)
-        return model_def["url"]
-
     def model_tokens(self) -> int:
         """Get the token context size for the current backend."""
         backend = self.backend()
@@ -95,34 +85,17 @@ class Config:
 
     def backend_config(self) -> dict[str, Any]:
         """
-        Get backend-specific configuration.
+        Get the raw backend-specific configuration.
 
         Returns:
-            Dictionary with backend configuration parameters
+            Dictionary with the raw backend configuration from the config file
         """
         backend = self.backend()
 
         if backend == "llama-cpp":
-            llama_config = self.__get_llama_cpp_config()
-            model_name = llama_config.get("model")
-            if not model_name:
-                raise ValueError("Missing 'model' in llama-cpp configuration")
-
-            model_def = self.__find_llama_cpp_model(model_name)
-
-            return {
-                "model_name": model_name,
-                "model_url": model_def["url"],
-                "n_ctx": model_def.get("tokens", 2048),
-                "n_threads": llama_config.get("threads", 4),
-                "verbose": llama_config.get("verbose", False),
-            }
+            return self.__get_llama_cpp_config()
         elif backend == "ollama":
-            ollama_config = self.__get_ollama_config()
-            return {
-                "model": ollama_config.get("model", "llama2"),
-                "host": ollama_config.get("url", "http://localhost:11434"),
-            }
+            return self.__get_ollama_config()
         else:
             raise ValueError(f"Unknown backend: {backend}")
 

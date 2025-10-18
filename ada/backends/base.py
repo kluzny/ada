@@ -68,5 +68,25 @@ class Base(ABC):
         """
         raise NotImplementedError("Subclasses must implement chat_completion method")
 
+    @abstractmethod
+    def current_model(self) -> str:
+        """
+        Get the name of the currently active model.
+
+        Returns:
+            The name of the current model
+        """
+        raise NotImplementedError("Subclasses must implement current_model method")
+
+    @abstractmethod
+    def available_models(self) -> list[str]:
+        """
+        Get a list of available model names.
+
+        Returns:
+            List of model names that can be used with this backend
+        """
+        raise NotImplementedError("Subclasses must implement available_models method")
+
     def __str__(self) -> str:
         return f"{self.__class__.__name__}"

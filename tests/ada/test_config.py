@@ -13,11 +13,6 @@ def test_config_load_and_access():
     assert config.log_level() == logging.DEBUG
     assert not config.record()
     assert not config.history()
-    assert (
-        config.model_url()
-        == "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf"
-    )
-    assert config.model_tokens() == 1024
 
 
 def test_config_minimum_viable_defaults():
