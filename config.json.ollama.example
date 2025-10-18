@@ -2,7 +2,7 @@
   "log_level": "DEBUG",
   "record": false,
   "history": true,
-  "backend": "llama-cpp",
+  "backend": "ollama",
   "backends": {
     "llama-cpp": {
       "model": "phi-2",
@@ -18,7 +18,8 @@
     },
     "ollama": {
       "url": "http://localhost:11434",
-      "model": "llama3.2",
+      "model": "llama2",
+      "tokens": 2048
     }
   }
 }

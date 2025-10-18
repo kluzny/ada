@@ -9,6 +9,7 @@ requires-python = ">=3.13"
 dependencies = [
     "asyncio>=4.0.0",
     "llama-cpp-python>=0.3.15",
+    "ollama>=0.4.7",
     "prompt-toolkit>=3.0.51",
     "pydantic>=2.11.7",
     "pytest-env>=1.1.5",

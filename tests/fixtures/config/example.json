@@ -2,8 +2,24 @@
   "log_level": "DEBUG",
   "record": false,
   "history": false,
-  "model": {
-    "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
-    "tokens": 1024
+  "backend": "llama-cpp",
+  "backends": {
+    "llama-cpp": {
+      "model": "tiny-llm",
+      "threads": 4,
+      "verbose": false,
+      "models": [
+        {
+          "name": "tiny-llm",
+          "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
+          "tokens": 1024
+        }
+      ]
+    },
+    "ollama": {
+      "url": "http://localhost:11434",
+      "model": "llama2",
+      "tokens": 1024
+    }
   }
 }

@@ -1,4 +1,3 @@
-from llama_cpp import Llama
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.history import FileHistory
 
@@ -15,6 +14,7 @@ from ada.tool_box import ToolBox
 from ada.exceptions import TerminateTaskGroup
 from ada.looper import Looper
 from ada.formatter import block
+from ada.backends import Base as Backend, LlamaCppBackend, OllamaBackend
 
 
 WHOAMI = "ADA"
@@ -32,9 +32,8 @@ class Agent:
 
     def __init__(self, config: Config):
         logger.info("initializing agent")
-        self.model: Model = Model(config.model_url())
         self.max_content_length: int = config.model_tokens()
-        self.llm: Llama = self.__build_llm()
+        self.backend: Backend = self.__build_backend(config)
         self.conversation: Conversation = Conversation(record=config.record())
         self.persona = Personas.DEFAULT
         self.__init_prompt(config)
@@ -89,13 +88,31 @@ class Agent:
         self.__swap_persona(looper, persona)
         return True
 
-    def __build_llm(self):
-        return Llama(
-            model_path=self.model.path,
-            n_ctx=self.max_content_length,
-            n_threads=4,
-            verbose=False,  # TODO: can we capture the verbose output with our logger?
-        )
+    def __build_backend(self, config: Config) -> Backend:
+        """
+        Build the appropriate LLM backend based on configuration.
+
+        Args:
+            config: Configuration object
+
+        Returns:
+            Initialized backend instance
+        """
+        backend_type = config.backend_type()
+        backend_config = config.backend_config()
+
+        logger.info(f"building backend: {backend_type}")
+
+        if backend_type == "llama-cpp":
+            # For llama-cpp, we need to use the model path from the Model class
+            # which handles downloading
+            model = Model(backend_config["model_url"])
+            backend_config["model_path"] = model.path
+            return LlamaCppBackend(backend_config)
+        elif backend_type == "ollama":
+            return OllamaBackend(backend_config)
+        else:
+            raise ValueError(f"Unknown backend type: {backend_type}")
 
     async def __scan_commands(self, query: str, looper: Looper) -> bool:
         """
@@ -196,14 +213,14 @@ class Agent:
     def __think(self, messages: list[dict] = []):
         messages.insert(0, self.__system_prompt())
 
-        return self.llm.create_chat_completion(
+        return self.backend.chat_completion(
             messages=messages,
             tools=ToolBox.definitions(),
             # tool_choice={
             #     "type": "function",
             #     "function": {"name": "example_tool"},
             # },
-            tool_choice="auto",  # not yet implemented https://github.com/abetlen/llama-cpp-python/issues/1338
+            tool_choice="auto",
             response_format={"type": "json_object"},
             temperature=0.7,
             max_tokens=None,

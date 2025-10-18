@@ -1,0 +1,176 @@
+"""
+Ollama backend implementation.
+
+This module provides the OllamaBackend class for using models via Ollama.
+"""
+
+from typing import Any
+import ollama
+
+from .base import Base
+from ada.logger import build_logger
+
+logger = build_logger(__name__)
+
+
+class OllamaBackend(Base):
+    """
+    Backend implementation using Ollama for local model serving.
+
+    This backend connects to a running Ollama instance to generate completions.
+    Ollama must be running separately (e.g., `ollama serve`).
+    """
+
+    def __init__(self, config: dict[str, Any]):
+        """
+        Initialize the Ollama backend.
+
+        Args:
+            config: Configuration dictionary with keys:
+                - model: Name of the Ollama model (e.g., "llama2", "mistral")
+                - host: Optional Ollama host URL (default: http://localhost:11434)
+        """
+        super().__init__(config)
+
+        self.model = config.get("model")
+        if not self.model:
+            raise ValueError("model name is required for OllamaBackend")
+
+        # Set custom host if provided
+        self.host = config.get("host")
+        if self.host:
+            self.client = ollama.Client(host=self.host)
+            logger.info(
+                f"initializing Ollama backend with model: {self.model}, host: {self.host}"
+            )
+        else:
+            self.client = ollama.Client()
+            logger.info(f"initializing Ollama backend with model: {self.model}")
+
+    def chat_completion(
+        self,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+        tool_choice: str | dict = "auto",
+        response_format: dict | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        stop: list[str] | None = None,
+    ) -> dict:
+        """
+        Generate a chat completion using Ollama.
+
+        Args:
+            messages: List of message dictionaries
+            tools: Optional list of tool definitions
+            tool_choice: Tool selection strategy (note: Ollama support may vary)
+            response_format: Optional response format
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+            stop: Stop sequences
+
+        Returns:
+            Response dictionary in OpenAI-compatible format
+        """
+        logger.debug(f"generating completion with {len(messages)} messages")
+
+        # Build options dict for Ollama
+        options = {
+            "temperature": temperature,
+        }
+
+        if stop:
+            options["stop"] = stop
+
+        # Ollama uses "num_predict" instead of "max_tokens"
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens
+
+        # Call Ollama
+        try:
+            # Check if tools are provided
+            if tools and len(tools) > 0:
+                response = self.client.chat(
+                    model=self.model,
+                    messages=messages,
+                    tools=tools,
+                    options=options,
+                    format="json"
+                    if response_format and response_format.get("type") == "json_object"
+                    else None,
+                )
+            else:
+                response = self.client.chat(
+                    model=self.model,
+                    messages=messages,
+                    options=options,
+                    format="json"
+                    if response_format and response_format.get("type") == "json_object"
+                    else None,
+                )
+
+            # Convert Ollama response to OpenAI-compatible format
+            return self._convert_response(response)
+
+        except Exception as e:
+            logger.error(f"Ollama error: {e}")
+            raise
+
+    def _convert_response(self, ollama_response: dict) -> dict:
+        """
+        Convert Ollama response format to OpenAI-compatible format.
+
+        Ollama response structure:
+        {
+            "message": {
+                "role": "assistant",
+                "content": "...",
+                "tool_calls": [...] (optional)
+            },
+            "done": true,
+            "total_duration": ...,
+            "prompt_eval_count": ...,
+            "eval_count": ...
+        }
+
+        Args:
+            ollama_response: The response from Ollama
+
+        Returns:
+            OpenAI-compatible response dictionary
+        """
+        message = ollama_response.get("message", {})
+
+        # Calculate total tokens (approximation)
+        prompt_tokens = ollama_response.get("prompt_eval_count", 0)
+        completion_tokens = ollama_response.get("eval_count", 0)
+        total_tokens = prompt_tokens + completion_tokens
+
+        # Build OpenAI-compatible response
+        openai_response = {
+            "choices": [
+                {
+                    "message": {
+                        "role": message.get("role", "assistant"),
+                        "content": message.get("content"),
+                    }
+                }
+            ],
+            "usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+            },
+        }
+
+        # Include tool_calls if present
+        if "tool_calls" in message:
+            openai_response["choices"][0]["message"]["tool_calls"] = message[
+                "tool_calls"
+            ]
+
+        return openai_response
+
+    def __str__(self) -> str:
+        host_str = f", host={self.host}" if self.host else ""
+        return f"OllamaBackend(model={self.model}{host_str})"
