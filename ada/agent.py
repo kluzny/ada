@@ -4,7 +4,6 @@ from prompt_toolkit.history import FileHistory
 from asyncio import TaskGroup, Queue, AbstractEventLoop, to_thread
 
 from ada.config import Config
-from ada.model import Model
 from ada.conversation import Conversation
 from ada.logger import build_logger
 from ada.response import Response
@@ -104,10 +103,6 @@ class Agent:
         logger.info(f"building backend: {backend}")
 
         if backend == "llama-cpp":
-            # For llama-cpp, we need to use the model path from the Model class
-            # which handles downloading
-            model = Model(backend_config["model_url"])
-            backend_config["model_path"] = model.path
             return LlamaCppBackend(backend_config)
         elif backend == "ollama":
             return OllamaBackend(backend_config)

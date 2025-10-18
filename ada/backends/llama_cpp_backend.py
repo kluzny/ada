@@ -8,6 +8,7 @@ from typing import Any
 from llama_cpp import Llama
 
 from .base import Base
+from ada.model import Model
 from ada.logger import build_logger
 
 logger = build_logger(__name__)
@@ -26,16 +27,20 @@ class LlamaCppBackend(Base):
 
         Args:
             config: Configuration dictionary with keys:
-                - model_path: Path to the GGUF model file
+                - model_url: URL to download the GGUF model file
                 - n_ctx: Context window size (default: 2048)
                 - n_threads: Number of threads to use (default: 4)
                 - verbose: Whether to enable verbose output (default: False)
         """
         super().__init__(config)
 
-        model_path = config.get("model_path")
-        if not model_path:
-            raise ValueError("model_path is required for LlamaCppBackend")
+        model_url = config.get("model_url")
+        if not model_url:
+            raise ValueError("model_url is required for LlamaCppBackend")
+
+        # Use Model class to handle downloading and caching
+        self.model = Model(model_url)
+        model_path = self.model.path
 
         n_ctx = config.get("n_ctx", 2048)
         n_threads = config.get("n_threads", 4)
@@ -89,4 +94,4 @@ class LlamaCppBackend(Base):
         )
 
     def __str__(self) -> str:
-        return f"LlamaCppBackend(model={self.config.get('model_path', 'unknown')})"
+        return f"LlamaCppBackend(model={self.model.name if hasattr(self, 'model') else 'unknown'})"
