@@ -33,6 +33,7 @@ class Agent:
 
     def __init__(self, config: Config):
         logger.info("initializing agent")
+        self.config = config
         # TODO: ask the backend for this
         self.max_content_length: int = config.model_tokens()
         self.backend: Backend = self.__build_backend(config)
@@ -124,10 +125,39 @@ class Agent:
         /prompt             - Show the current system prompt
         /persona, /personas - Show current persona and list available personas
         /switch [name]      - Switch to a different persona
+        /backend, /backends - Show current backend and list available backends
+        /model, /models     - Show current model and list available models
         /exit               - Exit the chat
         """)
 
         self.say(help_text)
+
+    def __show_backends(self) -> None:
+        """Display current backend and list available backends."""
+        current_backend = self.config.backend()
+        available_backends = list(self.config.loaded.get("backends", {}).keys())
+
+        output = f"Current backend: {current_backend}\n"
+        output += f"Backend type: {self.backend}\n\n"
+        output += "Available backends:\n\n"
+        for backend in available_backends:
+            marker = "*" if backend == current_backend else " "
+            output += f"  {marker} {backend}\n"
+
+        self.say(output)
+
+    def __show_models(self) -> None:
+        """Display current model and list available models."""
+        current_model = self.backend.current_model()
+        available_models = self.backend.available_models()
+
+        output = f"Current model: {current_model}\n\n"
+        output += "Available models:\n\n"
+        for model in available_models:
+            marker = "*" if model == current_model else " "
+            output += f"  {marker} {model}\n"
+
+        self.say(output)
 
     async def __scan_commands(self, query: str, looper: Looper) -> bool:
         """
@@ -179,6 +209,12 @@ class Agent:
                 self.say(
                     f"Persona '{persona_name}' not found. Use '/personas' to see available personas."
                 )
+            return True
+        elif neat == "/backends" or neat == "/backend":
+            self.__show_backends()
+            return True
+        elif neat == "/models" or neat == "/model":
+            self.__show_models()
             return True
         return False
 
