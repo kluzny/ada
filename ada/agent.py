@@ -1,6 +1,8 @@
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.history import FileHistory
 
+from textwrap import dedent
+
 from asyncio import TaskGroup, Queue, AbstractEventLoop, to_thread
 
 from ada.config import Config
@@ -31,6 +33,7 @@ class Agent:
 
     def __init__(self, config: Config):
         logger.info("initializing agent")
+        # TODO: ask the backend for this
         self.max_content_length: int = config.model_tokens()
         self.backend: Backend = self.__build_backend(config)
         self.conversation: Conversation = Conversation(record=config.record())
@@ -109,6 +112,23 @@ class Agent:
         else:
             raise ValueError(f"Unknown backend: {backend}")
 
+    def __show_help(self) -> None:
+        """Display available commands and their descriptions."""
+        help_text = dedent("""\
+        Available Commands:
+
+        /help, /?      - Show this help message
+        /clear         - Clear the conversation history
+        /history       - Display the conversation history
+        /tools         - List available tools
+        /prompt        - Show the current system prompt
+        /mode, /modes  - Show current persona and list available personas
+        /switch [name] - Switch to a different persona
+        /exit          - Exit the chat
+        """)
+
+        self.say(help_text)
+
     async def __scan_commands(self, query: str, looper: Looper) -> bool:
         """
         Scan for and handle special commands.
@@ -120,16 +140,19 @@ class Agent:
             bool: True if a command was handled, False if no command was found
         """
         neat = query.lower().strip()
-        if neat == "clear":
+        if neat == "/help" or neat == "/?":
+            self.__show_help()
+            return True
+        elif neat == "/clear":
             self.conversation.clear()
             return True
-        elif neat == "history":
+        elif neat == "/history":
             print(self.conversation)
             return True
-        elif neat == "tools":
+        elif neat == "/tools":
             self.__list_tools()
             return True
-        elif neat == "prompt":
+        elif neat == "/prompt":
             self.say(
                 "\n"
                 + block("SYSTEM PROMPT")
@@ -138,23 +161,23 @@ class Agent:
                 + block("END SYSTEM PROMPT").strip()
             )
             return True
-        elif neat == "modes" or neat == "mode":
+        elif neat == "/modes" or neat == "/mode":
             current = f"Current mode is:\n\n{self.persona}\n"
             available_personas = ""
             for persona in Personas.all():
                 available_personas += str(persona) + "\n"
             self.say(
-                f"{current}\nAvailable personas:\n\n{available_personas}\nUse `switch [name]` to change personas."
+                f"{current}\nAvailable personas:\n\n{available_personas}\nUse `/switch [name]` to change personas."
             )
             return True
-        elif query.lower().startswith("switch "):
-            persona_name = query[7:].strip()  # Remove "switch " prefix
+        elif query.lower().startswith("/switch "):
+            persona_name = query[8:].strip()  # Remove "/switch " prefix
             switched = await self.__switch_persona(persona_name, looper)
             if switched:
                 self.say(f"Switched to persona {self.persona.name}")
             else:
                 self.say(
-                    f"Persona '{persona_name}' not found. Use 'modes' to see available personas."
+                    f"Persona '{persona_name}' not found. Use '/modes' to see available personas."
                 )
             return True
         return False
@@ -189,7 +212,7 @@ class Agent:
         self.persona.clear_cached_memories()
 
     async def __chat(self, looper: Looper):
-        print(f"{WHOAMI} Chat (type 'exit' to quit)")
+        print(f"{WHOAMI} Chat (type '/exit' to quit, '/help' for commands)")
 
         while True:
             query = await to_thread(self.input, f"{WHOAREYOU}: ")
@@ -197,7 +220,7 @@ class Agent:
                 continue  # ignore empty user input
             elif await self.__scan_commands(query, looper):
                 continue  # command was handled by __scan_commands
-            elif query.lower() == "exit":
+            elif query.lower().strip() == "/exit":
                 self.say("Goodbye")
                 break
             else:
