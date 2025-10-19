@@ -117,14 +117,14 @@ class Agent:
         help_text = dedent("""\
         Available Commands:
 
-        /help, /?      - Show this help message
-        /clear         - Clear the conversation history
-        /history       - Display the conversation history
-        /tools         - List available tools
-        /prompt        - Show the current system prompt
-        /mode, /modes  - Show current persona and list available personas
-        /switch [name] - Switch to a different persona
-        /exit          - Exit the chat
+        /help, /?           - Show this help message
+        /clear              - Clear the conversation history
+        /history            - Display the conversation history
+        /tools              - List available tools
+        /prompt             - Show the current system prompt
+        /persona, /personas - Show current persona and list available personas
+        /switch [name]      - Switch to a different persona
+        /exit               - Exit the chat
         """)
 
         self.say(help_text)
@@ -161,8 +161,8 @@ class Agent:
                 + block("END SYSTEM PROMPT").strip()
             )
             return True
-        elif neat == "/modes" or neat == "/mode":
-            current = f"Current mode is:\n\n{self.persona}\n"
+        elif neat == "/personas" or neat == "/persona":
+            current = f"Current persona is:\n\n{self.persona}\n"
             available_personas = ""
             for persona in Personas.all():
                 available_personas += str(persona) + "\n"
@@ -177,7 +177,7 @@ class Agent:
                 self.say(f"Switched to persona {self.persona.name}")
             else:
                 self.say(
-                    f"Persona '{persona_name}' not found. Use '/modes' to see available personas."
+                    f"Persona '{persona_name}' not found. Use '/personas' to see available personas."
                 )
             return True
         return False
