@@ -127,7 +127,7 @@ class Agent:
         /switch [name]      - Switch to a different persona
         /backend, /backends - Show current backend and list available backends
         /model, /models     - Show current model and list available models
-        /exit               - Exit the chat
+        /exit, /quit, /bye  - Exit the chat
         """)
 
         self.say(help_text)
@@ -256,7 +256,7 @@ class Agent:
                 continue  # ignore empty user input
             elif await self.__scan_commands(query, looper):
                 continue  # command was handled by __scan_commands
-            elif query.lower().strip() == "/exit":
+            elif query.lower().strip() in ("/exit", "/quit", "/bye"):
                 self.say("Goodbye")
                 break
             else:
