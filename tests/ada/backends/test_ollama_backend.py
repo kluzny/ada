@@ -206,3 +206,33 @@ def test_str_representation(sample_config, mock_ollama_client):
     assert "OllamaBackend" in str(backend)
     assert "llama2" in str(backend)
     assert "http://localhost:11434" in str(backend)
+
+
+def test_chat_completion_with_gpt_oss():
+    """Test chat_completion with gpt-oss model without mocks."""
+    config = {
+        "model": "gpt-oss:20b",
+        "url": "http://localhost:11434",
+        "tokens": 2048,
+    }
+
+    backend = OllamaBackend(config)
+
+    messages = [{"role": "user", "content": "Hello"}]
+
+    # Call chat_completion and verify it doesn't raise an error
+    response = backend.chat_completion(messages, max_tokens=50)
+
+    # Verify response is a dict (JSON object)
+    assert isinstance(response, dict)
+
+    # Verify response has expected OpenAI-compatible structure
+    assert "choices" in response
+    assert isinstance(response["choices"], list)
+    assert len(response["choices"]) > 0
+    assert "message" in response["choices"][0]
+    assert "content" in response["choices"][0]["message"]
+
+    # Verify usage information is present
+    assert "usage" in response
+    assert "total_tokens" in response["usage"]

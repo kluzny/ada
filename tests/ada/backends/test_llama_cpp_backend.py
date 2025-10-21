@@ -147,3 +147,35 @@ def test_str_representation(sample_config, mock_model, mock_llama):
 
     assert "LlamaCppBackend" in str(backend)
     assert "test-model.gguf" in str(backend)
+
+
+def test_chat_completion_with_tiny_llm():
+    """Test chat_completion with Tiny-LLM without mocks."""
+    config = {
+        "model": "tiny-llm",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "tiny-llm",
+                "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
+                "tokens": 1024,
+            }
+        ],
+    }
+
+    backend = LlamaCppBackend(config)
+
+    messages = [{"role": "user", "content": "Hello"}]
+
+    # Call chat_completion and verify it doesn't raise an error
+    response = backend.chat_completion(messages, max_tokens=50)
+
+    # Verify response is a dict (JSON object)
+    assert isinstance(response, dict)
+
+    # Verify response has expected OpenAI-compatible structure
+    assert "choices" in response
+    assert isinstance(response["choices"], list)
+    assert len(response["choices"]) > 0
+    assert "message" in response["choices"][0]
