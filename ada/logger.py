@@ -12,7 +12,7 @@ LOG_FILE = os.path.join(LOG_DIR, "ada.log")
 LOG_STD: bool = os.environ.get("LOG_STD") is not None
 
 
-def build_logger(name: str):
+def build_logger(name: str) -> logging.Logger:
     config = Config()
 
     logger = logging.getLogger(name)

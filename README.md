@@ -14,6 +14,34 @@ $ uv sync # install python packages
 $ cp -pv config.json.example config.json # default configuration file
 ```
 
+See the section on backends to determine what additional dependencies you may need to install.
+
+## Running
+
+```bash
+$ python main.py # a minimal REPL for the agent
+```
+
+## Backends
+
+ADA supports multiple LLM backends for flexible model deployment. You can switch between backends by changing the `backend` key in your `config.json`.
+
+### Available Backends
+
+#### llama-cpp (Local GGUF Models)
+
+The **llama-cpp** backend runs quantized GGUF models locally using [llama-cpp-python](https://github.com/abetlen/llama-cpp-python). This backend is ideal for running models entirely offline with full privacy.
+
+**Features:**
+
+- Runs models locally without internet connection (after initial download)
+- Automatic model download and caching to `models/` directory
+- Support for CPU and GPU inference (with CUDA/Metal/etc.)
+- Dynamic context window detection from GGUF metadata
+- No external service dependencies
+
+**Prerequisites:**
+
 Note: `llama-cpp-python` also supports GPU inference with additional compiler flags, for instance:
 
 ```bash
@@ -24,11 +52,105 @@ $ CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --verbose
 
 Refer to the official documentation for your specific GPU [llama-cpp-python#installation](https://llama-cpp-python.readthedocs.io/en/latest/#installation)
 
-## Running
+**Configuration:**
+
+```json
+{
+  "backend": "llama-cpp",
+  "backends": {
+    "llama-cpp": {
+      "model": "phi-2",
+      "threads": 4,
+      "verbose": false,
+      "models": [
+        {
+          "name": "phi-2",
+          "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf"
+        }
+      ]
+    }
+  }
+}
+```
+
+**Configuration Options:**
+
+- `model`: Name of the model to use (must match a name in the `models` array)
+- `models`: Array of model definitions with `name` and `url` fields
+- `threads`: Number of CPU threads to use (default: 4)
+- `verbose`: Enable verbose llama.cpp logging (default: false)
+
+**Finding Models:**
+Browse quantized GGUF models on [Hugging Face](https://huggingface.co/), search for models with the "GGUF" tag.
+
+#### ollama (Local Model Server)
+
+The **ollama** backend connects to a running [Ollama](https://ollama.ai/) server for model inference. Ollama provides an easy-to-use model management system with a simple CLI.
+
+**Features:**
+
+- Easy model management via `ollama pull <model-name>`
+- Supports the full Ollama model library, although you will want to select models with tool support
+- Automatic context window detection from model metadata
+- Can connect to local or remote Ollama servers
+- Built-in model quantization and optimization
+
+**Prerequisites:**
+Install and start Ollama:
 
 ```bash
-$ python main.py # a minimal REPL for the agent
+# Install Ollama (see https://ollama.com)
+$ curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a model
+$ ollama pull gpt-oss:latest
+
+# Start the Ollama server (if not managed via systemd)
+$ ollama serve
 ```
+
+**Configuration:**
+
+```json
+{
+  "backend": "ollama",
+  "backends": {
+    "ollama": {
+      "url": "http://localhost:11434",
+      "model": "gpt-oss:latest"
+    }
+  }
+}
+```
+
+**Configuration Options:**
+
+- `url`: Ollama server URL (default: http://localhost:11434)
+- `model`: Name of the Ollama model to use (e.g., "llama3.2:latest", "mistral:latest")
+
+**Available Models:**
+Browse the [Ollama model library](https://ollama.ai/library) for available models. Popular options include:
+
+- `gemma3` - Google's single gpu Gemini model
+- `gpt-oss` - OpenAI's open source model
+- `llama3.2` - Meta's Llama 3.2 model
+- `mistral` - Mistral AI's base model
+- `phi` - Microsoft's efficient small model
+
+### Switching Backends
+
+To switch between backends, simply update the `backend` field in your `config.json`:
+
+```json
+{
+  "backend": "ollama", // Change this to "llama-cpp" or "ollama"
+  "backends": {
+    // Both backend configurations can coexist
+  }
+}
+```
+
+Both backend configurations can remain in your config file - only the active backend specified by the `backend` field will be used.
 
 ## Personas
 

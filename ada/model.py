@@ -20,7 +20,7 @@ class Model:
 
         self.__prepare()
 
-    def __prepare(self):
+    def __prepare(self) -> None:
         os.makedirs(self.CACHE_DIR, exist_ok=True)
 
         if not os.path.exists(self.path):

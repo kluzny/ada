@@ -1,5 +1,6 @@
 import logging
 import json
+from typing import Any
 
 
 class Config:
@@ -7,9 +8,9 @@ class Config:
 
     def __init__(self, path: str | None = None):
         self.config_path: str = path or self.DEFAULT_PATH
-        self.loaded: dict = self.__load(self.config_path)
+        self.loaded: dict = self.__init__load(self.config_path)
 
-    def __load(self, path: str) -> dict:
+    def __init__load(self, path: str) -> dict:
         with open(path, "r") as f:
             return json.load(f)
 
@@ -23,14 +24,51 @@ class Config:
     def history(self) -> bool:
         return "history" in self.loaded and self.loaded["history"]
 
-    def __model(self) -> dict:
-        return self.loaded["model"]
+    def backend(self) -> str:
+        """
+        Get the backend from configuration.
 
-    def model_url(self) -> str:
-        return self.__model()["url"]
+        Returns:
+            Backend: "llama-cpp" or "ollama" (default: "llama-cpp")
+        """
+        return self.loaded.get("backend", "llama-cpp")
 
-    def model_tokens(self) -> int:
-        return self.__model()["tokens"]
+    def backend_config(self, backend: str | None = None) -> dict[str, Any]:
+        """
+        Get the raw backend-specific configuration.
+
+        Args:
+            backend: Optional backend name. If None, uses the configured backend.
+
+        Returns:
+            Dictionary with the raw backend configuration from the config file
+        """
+        backend = backend or self.backend()
+        return self.__get_backend_config_for(backend)
+
+    def __get_backends_config(self) -> dict[str, Any]:
+        """Get the backends configuration object."""
+        if "backends" not in self.loaded:
+            raise ValueError("Missing 'backends' configuration")
+        return self.loaded["backends"]
+
+    def __get_backend_config_for(self, backend: str) -> dict[str, Any]:
+        """
+        Get backend configuration for a specific backend.
+
+        Args:
+            backend: The backend name (e.g., "llama-cpp", "ollama")
+
+        Returns:
+            Dictionary with the backend configuration
+
+        Raises:
+            ValueError: If the backend configuration is missing
+        """
+        backends = self.__get_backends_config()
+        if backend not in backends:
+            raise ValueError(f"Missing '{backend}' backend configuration")
+        return backends[backend]
 
 
 if __name__ == "__main__":

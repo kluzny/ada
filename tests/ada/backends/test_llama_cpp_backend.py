@@ -1,0 +1,298 @@
+import pytest
+from unittest.mock import Mock, patch
+from ada.backends.llama_cpp_backend import LlamaCppBackend
+
+
+@pytest.fixture
+def sample_config():
+    """Sample configuration for llama-cpp backend."""
+    return {
+        "model": "test-model",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "test-model",
+                "url": "https://example.com/test-model.gguf",
+            },
+            {
+                "name": "another-model",
+                "url": "https://example.com/another-model.gguf",
+            },
+        ],
+    }
+
+
+@pytest.fixture
+def mock_model():
+    """Mock Model class."""
+    with patch("ada.backends.llama_cpp_backend.Model") as mock:
+        mock_instance = Mock()
+        mock_instance.path = "/path/to/model.gguf"
+        mock_instance.name = "test-model.gguf"
+        mock.return_value = mock_instance
+        yield mock
+
+
+@pytest.fixture
+def mock_llama():
+    """Mock Llama class."""
+    with patch("ada.backends.llama_cpp_backend.Llama") as mock:
+        mock_instance = Mock()
+        mock.return_value = mock_instance
+        yield mock
+
+
+def test_llama_cpp_backend_initialization(sample_config, mock_model, mock_llama):
+    """Test LlamaCppBackend initialization."""
+    with patch.object(LlamaCppBackend, "context_window", return_value=2048):
+        backend = LlamaCppBackend(sample_config)
+
+        assert backend.model_name == "test-model"
+        assert len(backend.models_list) == 2
+        mock_model.assert_called_once_with("https://example.com/test-model.gguf")
+        mock_llama.assert_called_once()
+
+
+def test_llama_cpp_backend_missing_model(mock_model, mock_llama):
+    """Test LlamaCppBackend with missing model key."""
+    config = {"models": []}
+
+    with pytest.raises(ValueError, match="'model' is required"):
+        LlamaCppBackend(config)
+
+
+def test_llama_cpp_backend_model_not_found(mock_model, mock_llama):
+    """Test LlamaCppBackend with model not in models array."""
+    config = {
+        "model": "nonexistent-model",
+        "models": [{"name": "other-model", "url": "https://example.com/other.gguf"}],
+    }
+
+    with pytest.raises(ValueError, match="Model 'nonexistent-model' not found"):
+        LlamaCppBackend(config)
+
+
+def test_llama_cpp_backend_model_missing_url(mock_model, mock_llama):
+    """Test LlamaCppBackend with model missing url."""
+    config = {"model": "test-model", "models": [{"name": "test-model"}]}
+
+    with pytest.raises(ValueError, match="is missing 'url'"):
+        LlamaCppBackend(config)
+
+
+def test_current_model(sample_config, mock_model, mock_llama):
+    """Test current_model method."""
+    backend = LlamaCppBackend(sample_config)
+
+    assert backend.current_model() == "test-model"
+
+
+def test_available_models(sample_config, mock_model, mock_llama):
+    """Test available_models method."""
+    backend = LlamaCppBackend(sample_config)
+
+    models = backend.available_models()
+    assert len(models) == 2
+    assert "test-model" in models
+    assert "another-model" in models
+
+
+def test_available_models_filters_invalid(mock_model, mock_llama):
+    """Test available_models filters out entries without names."""
+    config = {
+        "model": "test-model",
+        "models": [
+            {"name": "test-model", "url": "https://example.com/test.gguf"},
+            {"url": "https://example.com/noname.gguf"},  # Missing name
+            {"name": "valid-model", "url": "https://example.com/valid.gguf"},
+        ],
+    }
+
+    backend = LlamaCppBackend(config)
+    models = backend.available_models()
+
+    assert len(models) == 2
+    assert "test-model" in models
+    assert "valid-model" in models
+
+
+def test_chat_completion(sample_config, mock_model, mock_llama):
+    """Test chat_completion method."""
+    backend = LlamaCppBackend(sample_config)
+    mock_llm = mock_llama.return_value
+
+    expected_response = {"choices": [{"message": {"content": "test"}}]}
+    mock_llm.create_chat_completion.return_value = expected_response
+
+    messages = [{"role": "user", "content": "Hello"}]
+    response = backend.chat_completion(messages)
+
+    assert response == expected_response
+    mock_llm.create_chat_completion.assert_called_once_with(
+        messages=messages,
+        tools=None,
+        tool_choice="auto",
+        response_format=None,
+        temperature=0.7,
+        max_tokens=None,
+        stop=None,
+    )
+
+
+def test_str_representation(sample_config, mock_model, mock_llama):
+    """Test string representation."""
+    backend = LlamaCppBackend(sample_config)
+
+    assert "LlamaCppBackend" in str(backend)
+    assert "test-model.gguf" in str(backend)
+
+
+def test_chat_completion_with_tiny_llm():
+    """Test chat_completion with Tiny-LLM without mocks."""
+    config = {
+        "model": "tiny-llm",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "tiny-llm",
+                "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
+            }
+        ],
+    }
+
+    backend = LlamaCppBackend(config)
+
+    messages = [{"role": "user", "content": "Hello"}]
+
+    # Call chat_completion and verify it doesn't raise an error
+    response = backend.chat_completion(messages, max_tokens=50)
+
+    # Verify response is a dict (JSON object)
+    assert isinstance(response, dict)
+
+    # Verify response has expected OpenAI-compatible structure
+    assert "choices" in response
+    assert isinstance(response["choices"], list)
+    assert len(response["choices"]) > 0
+    assert "message" in response["choices"][0]
+
+
+def test_context_window_with_tiny_llm():
+    """Test context_window returns the correct value from llama instance."""
+    config = {
+        "model": "tiny-llm",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "tiny-llm",
+                "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
+            }
+        ],
+    }
+
+    backend = LlamaCppBackend(config)
+
+    # Get context window from the backend
+    context_size = backend.context_window()
+
+    # Should return an integer
+    assert isinstance(context_size, int)
+
+    # Should be greater than 0
+    assert context_size > 0
+
+    # Should match the llama.context_length from GGUF metadata (1024 for Tiny-LLM)
+    assert context_size == 1024
+
+
+def test_context_window_fallback_to_2048(mock_model, mock_llama):
+    """Test context_window returns 2048 when metadata reading fails."""
+    config = {
+        "model": "test-model",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "test-model",
+                "url": "https://example.com/test-model.gguf",
+            }
+        ],
+    }
+
+    with patch.object(LlamaCppBackend, "context_window", return_value=2048):
+        backend = LlamaCppBackend(config)
+
+    # Mock the private method to raise an exception
+    with patch.object(
+        backend,
+        "_LlamaCppBackend__get_maximum_context_from_llm_instance",
+        side_effect=Exception("Failed to read metadata"),
+    ):
+        context_size = backend.context_window()
+
+        # Should fall back to 2048
+        assert context_size == 2048
+
+
+def test_context_window_with_missing_metadata(mock_model):
+    """Test context_window handles missing llama.context_length gracefully."""
+    config = {
+        "model": "test-model",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "test-model",
+                "url": "https://example.com/test-model.gguf",
+            }
+        ],
+    }
+
+    # Mock Llama instance with metadata but without llama.context_length
+    with patch("ada.backends.llama_cpp_backend.Llama") as mock_llama_class:
+        mock_instance = Mock()
+        mock_instance.metadata = {"some_key": "some_value"}  # No llama.context_length
+        mock_llama_class.return_value = mock_instance
+
+        with patch.object(LlamaCppBackend, "context_window", return_value=2048):
+            backend = LlamaCppBackend(config)
+
+        # Reset the patch to test the actual method
+        backend.llm = mock_instance
+
+        # Should raise ValueError and fall back to 2048
+        context_size = backend.context_window()
+        assert context_size == 2048
+
+
+def test_context_window_with_no_metadata_attribute(mock_model):
+    """Test context_window handles llm instance without metadata attribute."""
+    config = {
+        "model": "test-model",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "test-model",
+                "url": "https://example.com/test-model.gguf",
+            }
+        ],
+    }
+
+    # Mock Llama instance without metadata attribute
+    with patch("ada.backends.llama_cpp_backend.Llama") as mock_llama_class:
+        mock_instance = Mock()
+        del mock_instance.metadata  # Remove metadata attribute
+        mock_llama_class.return_value = mock_instance
+
+        with patch.object(LlamaCppBackend, "context_window", return_value=2048):
+            backend = LlamaCppBackend(config)
+
+        backend.llm = mock_instance
+
+        # Should fall back to 2048
+        context_size = backend.context_window()
+        assert context_size == 2048

@@ -1,6 +1,0 @@
-{
-  "model": {
-    "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
-    "tokens": 1024
-  }
-}

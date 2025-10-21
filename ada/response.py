@@ -26,7 +26,7 @@ class Response:
     role: str = "assistant"
     tokens: int = 0  # number of tokens used in the response
 
-    def __init__(self, source: dict):
+    def __init__(self, source: dict) -> None:
         logger.info("initialising response with \n" + dump(source))
         self.source = source
         self.tokens = source.get("usage", {}).get("total_tokens", 0)
@@ -35,7 +35,7 @@ class Response:
     def __choose(self) -> dict:
         return self.source["choices"][0]
 
-    def __maybe_json(self, content) -> dict | str:
+    def __maybe_json(self, content: str | None) -> dict | str:
         try:
             parsed = json.loads(content)
             logger.info("content parsed as json")
@@ -96,7 +96,7 @@ class Response:
 
         return "\n".join(returns)
 
-    def __format(self, parsed) -> str:
+    def __format(self, parsed: dict) -> str:
         output = []
 
         if "text" in parsed:

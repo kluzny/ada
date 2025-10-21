@@ -1,9 +1,23 @@
 {
   "log_level": "DEBUG",
-  "record": false,
+  "record": true,
   "history": true,
-  "model": {
-    "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf",
-    "tokens": 2048
+  "backend": "llama-cpp",
+  "backends": {
+    "llama-cpp": {
+      "model": "phi-2",
+      "threads": 4,
+      "verbose": false,
+      "models": [
+        {
+          "name": "phi-2",
+          "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf"
+        }
+      ]
+    },
+    "ollama": {
+      "url": "http://localhost:11434",
+      "model": "llama3.2"
+    }
   }
 }

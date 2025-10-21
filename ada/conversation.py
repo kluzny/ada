@@ -33,7 +33,7 @@ class Conversation(BaseModel):
     record_path: str | None = None
     storage_path: str | None = None
 
-    def __init__(self, **data):
+    def __init__(self, **data) -> None:
         super().__init__(**data)
 
         if self.record:
@@ -47,13 +47,13 @@ class Conversation(BaseModel):
 
         Path(self.storage_path).mkdir(exist_ok=True)
 
-    def append(self, author: str, body: str):
+    def append(self, author: str, body: str) -> None:
         entry = Entry(author=author, body=body)
         self.history.append(entry)
         if self.record:
             self.__save_record()
 
-    def append_response(self, author: str, response: Response):
+    def append_response(self, author: str, response: Response) -> None:
         entry = Entry(
             author=author,
             body=response.body,
@@ -64,7 +64,7 @@ class Conversation(BaseModel):
         if self.record:
             self.__save_record()
 
-    def clear(self):
+    def clear(self) -> None:
         self.history = []
         if self.record:
             self.__remove_record()
@@ -73,7 +73,7 @@ class Conversation(BaseModel):
     def messages(self) -> list[dict]:
         return [entry.message() for entry in self.history]
 
-    def __str__(self):
+    def __str__(self) -> str:
         output = ""
         output += block("HISTORY START")
         for entry in self.history:
@@ -86,7 +86,7 @@ class Conversation(BaseModel):
         unique_id = str(uuid.uuid4())
         return f"{timestamp}-{unique_id}.json"
 
-    def __save_record(self):
+    def __save_record(self) -> None:
         """Save current history to JSON file"""
         history_data = []
         for entry in self.history:
@@ -96,7 +96,7 @@ class Conversation(BaseModel):
         with open(self.record_path, "w") as f:  # pyright: ignore[reportCallIssue,reportArgumentType]
             json.dump(history_data, f, indent=4)
 
-    def __remove_record(self):
+    def __remove_record(self) -> None:
         """Remove the history file"""
         if self.record_path and Path(self.record_path).exists():
             logger.info(f"removing record file: {self.record_path}")
