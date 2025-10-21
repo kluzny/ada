@@ -187,11 +187,21 @@ It's ok to hallucinate in service of providing an additional *pun*portunity.
 
 ## Roadmap
 
-- provide a checksum when the model is downloaded
+- tools for file system access e.g. find, tree, cat, diff
+- audio input STT, with wake word 'ada'
+- audio output TTS
+- multi-step tasks
 - command autocomplete
 - resumable/forkable conversations
-- multi-step tasks
 - better tool use using explicit `tool_choice` calls
-- tools for file system access e.g. find, tree, cat, diff
 - support advanced templating for memories, possibly jinja
+- provide a checksum when the model is downloaded
 - logging happens in a separate frame
+- gif/vid of Ada, doing the thing
+
+## Bugs
+
+### llama-cpp
+
+- tool calling is still busted, and very model finicky
+- auto-detecting the max content only works for a handful of models, perhaps it should have a configurable override
