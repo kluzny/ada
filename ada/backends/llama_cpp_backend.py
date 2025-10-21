@@ -4,8 +4,16 @@ llama-cpp-python backend implementation.
 This module provides the LlamaCppBackend class for running local GGUF models.
 """
 
-from typing import Any
-from llama_cpp import Llama
+from typing import Any, List, cast, Optional, Union, Iterator
+from llama_cpp import (
+    Llama,
+    ChatCompletionRequestMessage,
+    ChatCompletionRequestResponseFormat,
+    ChatCompletionTool,
+    ChatCompletionToolChoiceOption,
+    CreateChatCompletionResponse,
+    CreateChatCompletionStreamResponse,
+)
 
 from .base import Base
 from ada.model import Model
@@ -85,13 +93,15 @@ class LlamaCppBackend(Base):
         temperature: float = 0.7,
         max_tokens: int | None = None,
         stop: list[str] | None = None,
-    ) -> dict:
+    ) -> Union[
+        CreateChatCompletionResponse, Iterator[CreateChatCompletionStreamResponse]
+    ]:
         """
         Generate a chat completion using llama-cpp-python.
 
         Args:
             messages: List of message dictionaries
-            tools: Optional list of tool definitions
+            tools: Optional list of tool definitions (dicts will be cast to ChatCompletionTool)
             tool_choice: Tool selection strategy
             response_format: Optional response format (e.g., {"type": "json_object"})
             temperature: Sampling temperature
@@ -99,19 +109,58 @@ class LlamaCppBackend(Base):
             stop: Stop sequences
 
         Returns:
-            Response dictionary in OpenAI-compatible format
+            The raw response object returned by llama-cpp-python (sync or streaming)
         """
         logger.debug(f"generating completion with {len(messages)} messages")
 
         return self.llm.create_chat_completion(
-            messages=messages,
-            tools=tools,
-            tool_choice=tool_choice,
-            response_format=response_format,
+            messages=cast(List[ChatCompletionRequestMessage], messages),
+            tools=cast(Optional[List[ChatCompletionTool]], tools),
+            tool_choice=cast(Optional[ChatCompletionToolChoiceOption], tool_choice),
+            response_format=cast(
+                Optional[ChatCompletionRequestResponseFormat], response_format
+            ),
             temperature=temperature,
             max_tokens=max_tokens,
             stop=stop,
         )
+
+    # def chat_completion(
+    #     self,
+    #     messages: list[dict],
+    #     tools: list[dict] | None = None,
+    #     tool_choice: str | dict = "auto",
+    #     response_format: dict | None = None,
+    #     temperature: float = 0.7,
+    #     max_tokens: int | None = None,
+    #     stop: list[str] | None = None,
+    # ) -> dict:
+    #     """
+    #     Generate a chat completion using llama-cpp-python.
+
+    #     Args:
+    #         messages: List of message dictionaries
+    #         tools: Optional list of tool definitions
+    #         tool_choice: Tool selection strategy
+    #         response_format: Optional response format (e.g., {"type": "json_object"})
+    #         temperature: Sampling temperature
+    #         max_tokens: Maximum tokens to generate
+    #         stop: Stop sequences
+
+    #     Returns:
+    #         Response dictionary in OpenAI-compatible format
+    #     """
+    #     logger.debug(f"generating completion with {len(messages)} messages")
+
+    #     return self.llm.create_chat_completion(
+    #         messages=cast(List[ChatCompletionRequestMessage], messages),
+    #         tools=tools,
+    #         tool_choice=tool_choice,
+    #         response_format=response_format,
+    #         temperature=temperature,
+    #         max_tokens=max_tokens,
+    #         stop=stop,
+    #     )
 
     def current_model(self) -> str:
         """
