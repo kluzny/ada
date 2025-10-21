@@ -83,14 +83,17 @@ class Config:
         else:
             return 2048
 
-    def backend_config(self) -> dict[str, Any]:
+    def backend_config(self, backend: str | None = None) -> dict[str, Any]:
         """
         Get the raw backend-specific configuration.
+
+        Args:
+            backend: Optional backend name. If None, uses the configured backend.
 
         Returns:
             Dictionary with the raw backend configuration from the config file
         """
-        backend = self.backend()
+        backend = backend or self.backend()
 
         if backend == "llama-cpp":
             return self.__get_llama_cpp_config()
