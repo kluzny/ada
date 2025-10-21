@@ -251,7 +251,7 @@ class Agent:
         print(f"{WHOAMI} Chat (type '/exit' to quit, '/help' for commands)")
 
         while True:
-            query = await to_thread(self.input, f"{WHOAREYOU}: ")
+            query = await to_thread(lambda: self.input(f"{WHOAREYOU}: "))
             if query.strip() == "":
                 continue  # ignore empty user input
             elif await self.__scan_commands(query, looper):
