@@ -226,7 +226,8 @@ class Agent:
             query: The user's input message
         """
         self.conversation.append(WHOAREYOU, query)
-        response = Response(self.__think(messages=self.conversation.messages()))
+        thought = self.__think(messages=self.conversation.messages())
+        response = Response(thought)
 
         logger.info(f"using {response.tokens} tokens")
         if response.tokens >= 0.75 * self.max_content_length:
@@ -251,7 +252,7 @@ class Agent:
         print(f"{WHOAMI} Chat (type '/exit' to quit, '/help' for commands)")
 
         while True:
-            query = await to_thread(self.input, f"{WHOAREYOU}: ")
+            query = await to_thread(lambda: self.input(f"{WHOAREYOU}: "))
             if query.strip() == "":
                 continue  # ignore empty user input
             elif await self.__scan_commands(query, looper):

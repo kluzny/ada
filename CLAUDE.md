@@ -50,7 +50,7 @@ Example `config.json` with both backends configured:
 ```json
 {
   "log_level": "DEBUG",
-  "record": false,
+  "record": true,
   "history": true,
   "backend": "llama-cpp",
   "backends": {
@@ -61,15 +61,13 @@ Example `config.json` with both backends configured:
       "models": [
         {
           "name": "phi-2",
-          "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf",
-          "tokens": 2048
+          "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf"
         }
       ]
     },
     "ollama": {
       "url": "http://localhost:11434",
-      "model": "llama2",
-      "tokens": 2048
+      "model": "llama3.2"
     }
   }
 }
@@ -78,24 +76,24 @@ Example `config.json` with both backends configured:
 ### llama-cpp-python Backend
 
 Runs GGUF models directly using llama.cpp. Models are automatically downloaded and cached in `models/` directory.
+Context window size is automatically detected from the GGUF model metadata.
 
 **Configuration keys:**
 - `model`: Name of the model to use (references a model in the `models` array)
 - `models`: Array of model definitions with:
   - `name`: Identifier for the model
   - `url`: Download URL for the GGUF file
-  - `tokens`: Context window size
-- `threads`: Number of CPU threads (optional, default: 4)
+- `threads`: Number of CPU threads (optional, default: 1)
 - `verbose`: Enable verbose llama.cpp output (optional, default: false)
 
 ### Ollama Backend
 
 Connects to a running Ollama instance. Requires Ollama to be installed and running separately (`ollama serve`).
+Context window size is automatically detected from the Ollama model metadata.
 
 **Configuration keys:**
 - `url`: Ollama server URL (default: http://localhost:11434)
-- `model`: Name of the Ollama model (e.g., "llama2", "mistral")
-- `tokens`: Context window size for token usage warnings
+- `model`: Name of the Ollama model (e.g., "llama2", "llama3.2", "mistral")
 
 **To switch backends:** Change the top-level `backend` key to either `"llama-cpp"` or `"ollama"`.
 
@@ -269,12 +267,10 @@ Edit `config.json` to customize:
 
 For `llama-cpp`:
 - `model`: Name of model to use from the `models` array
-- `models`: Array of model definitions (name, url, tokens)
-- `threads`: Number of CPU threads (optional, default: 4)
+- `models`: Array of model definitions with `name` and `url`
+- `threads`: Number of CPU threads (optional, default: 1)
 - `verbose`: Enable verbose output (optional, default: false)
 
 For `ollama`:
-- `url`: Ollama server URL (default: http://localhost:11434)
-- `model`: Name of the Ollama model (e.g., "llama2", "mistral")
-- `tokens`: Context window size for warnings (default: 2048)
-- always prefix python and make commands with `source activate`
+- `url`: Ollama server URL (optional, default: http://localhost:11434)
+- `model`: Name of the Ollama model (e.g., "llama2", "llama3.2", "mistral")
