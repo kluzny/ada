@@ -52,6 +52,26 @@ def test_base_requires_available_models(sample_config):
         def current_model(self) -> str:
             return "test-model"
 
+        def context_window(self) -> int:
+            return 2048
+
+    with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+        IncompleteBackend(sample_config)  # pyright: ignore[reportAbstractUsage]
+
+
+def test_base_requires_context_window(sample_config):
+    """Test that subclasses must implement context_window."""
+
+    class IncompleteBackend(Base):
+        def chat_completion(self, messages, **kwargs):
+            return {}
+
+        def current_model(self) -> str:
+            return "test-model"
+
+        def available_models(self) -> list[str]:
+            return ["test-model"]
+
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
         IncompleteBackend(sample_config)  # pyright: ignore[reportAbstractUsage]
 
@@ -72,6 +92,9 @@ def test_complete_backend_implementation(sample_config):
         def available_models(self) -> list[str]:
             return ["test-model", "another-model"]
 
+        def context_window(self) -> int:
+            return 4096
+
     backend = CompleteBackend(sample_config)
 
     # Test that config is stored
@@ -80,6 +103,7 @@ def test_complete_backend_implementation(sample_config):
     # Test that all methods work
     assert backend.current_model() == "test-model"
     assert backend.available_models() == ["test-model", "another-model"]
+    assert backend.context_window() == 4096
 
     response = backend.chat_completion([{"role": "user", "content": "test"}])
     assert "choices" in response
@@ -98,6 +122,9 @@ def test_base_str_method():
 
         def available_models(self) -> list[str]:
             return []
+
+        def context_window(self) -> int:
+            return 2048
 
     backend = TestBackend({})
     assert str(backend) == "TestBackend"
@@ -133,6 +160,9 @@ def test_chat_completion_signature():
 
         def available_models(self) -> list[str]:
             return []
+
+        def context_window(self) -> int:
+            return 2048
 
     backend = TestBackend({})
 
@@ -172,6 +202,9 @@ def test_config_storage():
         def available_models(self) -> list[str]:
             return []
 
+        def context_window(self) -> int:
+            return 2048
+
     config = {
         "model": "test-model",
         "url": "http://localhost:8000",
@@ -192,10 +225,12 @@ def test_methods_exist():
     assert hasattr(Base, "chat_completion")
     assert hasattr(Base, "current_model")
     assert hasattr(Base, "available_models")
+    assert hasattr(Base, "context_window")
     assert hasattr(Base, "__str__")
 
     assert callable(getattr(Base, "__init__"))
     assert callable(getattr(Base, "chat_completion"))
     assert callable(getattr(Base, "current_model"))
     assert callable(getattr(Base, "available_models"))
+    assert callable(getattr(Base, "context_window"))
     assert callable(getattr(Base, "__str__"))

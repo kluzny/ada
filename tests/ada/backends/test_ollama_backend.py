@@ -9,7 +9,6 @@ def sample_config():
     return {
         "model": "llama2",
         "url": "http://localhost:11434",
-        "tokens": 2048,
     }
 
 
@@ -213,7 +212,6 @@ def test_chat_completion_with_gpt_oss():
     config = {
         "model": "gpt-oss:20b",
         "url": "http://localhost:11434",
-        "tokens": 2048,
     }
 
     backend = OllamaBackend(config)
@@ -236,3 +234,25 @@ def test_chat_completion_with_gpt_oss():
     # Verify usage information is present
     assert "usage" in response
     assert "total_tokens" in response["usage"]
+
+
+def test_context_window_with_gpt_oss():
+    """Test context_window retrieves value from Ollama model metadata."""
+    config = {
+        "model": "gpt-oss:20b",
+        "url": "http://localhost:11434",
+    }
+
+    backend = OllamaBackend(config)
+
+    # Get context window from the backend
+    context_size = backend.context_window()
+
+    # Should return an integer
+    assert isinstance(context_size, int)
+
+    # Should be greater than 0
+    assert context_size > 0
+
+    # gpt-oss should have a reasonable context window (at least 2048)
+    assert context_size >= 2048

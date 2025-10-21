@@ -88,5 +88,15 @@ class Base(ABC):
         """
         raise NotImplementedError("Subclasses must implement available_models method")
 
+    @abstractmethod
+    def context_window(self) -> int:
+        """
+        Get the context window size (maximum tokens) for the current model.
+
+        Returns:
+            The context window size in tokens. Defaults to 2048 if unable to determine.
+        """
+        raise NotImplementedError("Subclasses must implement context_window method")
+
     def __str__(self) -> str:
         return f"{self.__class__.__name__}"

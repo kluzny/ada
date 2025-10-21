@@ -14,12 +14,10 @@ def sample_config():
             {
                 "name": "test-model",
                 "url": "https://example.com/test-model.gguf",
-                "tokens": 1024,
             },
             {
                 "name": "another-model",
                 "url": "https://example.com/another-model.gguf",
-                "tokens": 2048,
             },
         ],
     }
@@ -47,12 +45,13 @@ def mock_llama():
 
 def test_llama_cpp_backend_initialization(sample_config, mock_model, mock_llama):
     """Test LlamaCppBackend initialization."""
-    backend = LlamaCppBackend(sample_config)
+    with patch.object(LlamaCppBackend, 'context_window', return_value=2048):
+        backend = LlamaCppBackend(sample_config)
 
-    assert backend.model_name == "test-model"
-    assert len(backend.models_list) == 2
-    mock_model.assert_called_once_with("https://example.com/test-model.gguf")
-    mock_llama.assert_called_once()
+        assert backend.model_name == "test-model"
+        assert len(backend.models_list) == 2
+        mock_model.assert_called_once_with("https://example.com/test-model.gguf")
+        mock_llama.assert_called_once()
 
 
 def test_llama_cpp_backend_missing_model(mock_model, mock_llama):
@@ -159,7 +158,6 @@ def test_chat_completion_with_tiny_llm():
             {
                 "name": "tiny-llm",
                 "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
-                "tokens": 1024,
             }
         ],
     }
@@ -179,3 +177,32 @@ def test_chat_completion_with_tiny_llm():
     assert isinstance(response["choices"], list)
     assert len(response["choices"]) > 0
     assert "message" in response["choices"][0]
+
+
+def test_context_window_with_tiny_llm():
+    """Test context_window returns the correct value from llama instance."""
+    config = {
+        "model": "tiny-llm",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "tiny-llm",
+                "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
+            }
+        ],
+    }
+
+    backend = LlamaCppBackend(config)
+
+    # Get context window from the backend
+    context_size = backend.context_window()
+
+    # Should return an integer
+    assert isinstance(context_size, int)
+
+    # Should be greater than 0
+    assert context_size > 0
+
+    # Should match the llama.context_length from GGUF metadata (1024 for Tiny-LLM)
+    assert context_size == 1024

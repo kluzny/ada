@@ -57,23 +57,22 @@ class LlamaCppBackend(Base):
 
         # Use Model class to handle downloading and caching
         self.model = Model(model_url)
-        model_path = self.model.path
 
         # Store model information
         self.model_name = model_name
         self.models_list = models
 
-        n_ctx = model_def.get("tokens", 2048)
-        n_threads = config.get("threads", 4)
         verbose = config.get("verbose", False)
+        n_threads = config.get("threads", 1)
+        n_ctx = self.context_window()
 
-        logger.info(f"initializing llama.cpp with model: {model_path}")
-        logger.info(f"context window: {n_ctx}, threads: {n_threads}")
+        logger.info(f"initializing llama.cpp with model: {self.model.path}")
+        logger.info(f"n_ctx: {n_ctx}, n_threads: {n_threads}, verbose: {verbose}")
 
         self.llm = Llama(
-            model_path=model_path,
-            n_ctx=n_ctx,
+            model_path=self.model.path,
             n_threads=n_threads,
+            n_ctx=n_ctx,
             verbose=verbose,
         )
 
@@ -131,6 +130,33 @@ class LlamaCppBackend(Base):
             List of model names that can be used
         """
         return [model.get("name") for model in self.models_list if model.get("name")]
+
+    def context_window(self) -> int:
+        """
+        Get the context window size from the GGUF model metadata on an llm instance.
+        Falls back to 2048
+
+        Returns:
+            The context window size in tokens
+        """
+        try:
+            return self.__get_maximum_context_from_llm_instance(self.model.path)
+        except Exception as e:
+            logger.warning(
+                f"Failed to get context window size: {e}, defaulting to 2048"
+            )
+            return 2048
+
+    def __get_maximum_context_from_llm_instance(self, path: str) -> int:
+        # only exists long enough to grab the metadata, magic params to keep it quiet
+        info_llm = Llama(model_path=path, verbose=False, n_ctx=0)
+        if hasattr(info_llm, "metadata") and isinstance(info_llm.metadata, dict):
+            # Check for llama.context_length in metadata
+            context_length = info_llm.metadata.get("llama.context_length")
+            if context_length is not None:
+                # Metadata values are strings, convert to int
+                return int(context_length)
+        raise ValueError("unable to inspect `llama.context_length` from LLM metadata")
 
     def __str__(self) -> str:
         return f"LlamaCppBackend(model={self.model.name if hasattr(self, 'model') else 'unknown'})"

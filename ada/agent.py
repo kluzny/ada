@@ -34,9 +34,9 @@ class Agent:
     def __init__(self, config: Config):
         logger.info("initializing agent")
         self.config = config
-        # TODO: ask the backend for this
-        self.max_content_length: int = config.model_tokens()
         self.backend: Backend = self.__build_backend(config)
+        self.max_content_length: int = self.backend.context_window()
+        logger.info(f"max_content_length: {self.max_content_length}")
         self.conversation: Conversation = Conversation(record=config.record())
         self.persona = Personas.DEFAULT
         self.__init_prompt(config)

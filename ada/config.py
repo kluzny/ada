@@ -70,36 +70,6 @@ class Config:
             raise ValueError(f"Missing '{backend}' backend configuration")
         return backends[backend]
 
-    def __find_llama_cpp_model(self, model_name: str) -> dict[str, Any]:
-        """Find a model definition by name in llama-cpp models list."""
-        llama_config = self.__get_backend_config_for("llama-cpp")
-        if "models" not in llama_config:
-            raise ValueError("Missing 'models' array in llama-cpp configuration")
-
-        for model in llama_config["models"]:
-            if model.get("name") == model_name:
-                return model
-
-        raise ValueError(f"Model '{model_name}' not found in llama-cpp models list")
-
-    def model_tokens(self) -> int:
-        """Get the token context size for the current backend."""
-        backend = self.backend()
-
-        if backend == "llama-cpp":
-            llama_config = self.__get_backend_config_for("llama-cpp")
-            model_name = llama_config.get("model")
-            if not model_name:
-                raise ValueError("Missing 'model' in llama-cpp configuration")
-
-            model_def = self.__find_llama_cpp_model(model_name)
-            return model_def.get("tokens", 2048)
-        elif backend == "ollama":
-            ollama_config = self.__get_backend_config_for("ollama")
-            return ollama_config.get("tokens", 2048)
-        else:
-            return 2048
-
 
 if __name__ == "__main__":
     config = Config()

@@ -18,14 +18,12 @@ EXAMPLE_CONFIG = {
                 {
                     "name": "tiny-llm",
                     "url": "https://huggingface.co/mradermacher/Tiny-LLM-GGUF/resolve/main/Tiny-LLM.IQ4_XS.gguf",
-                    "tokens": 1024,
                 }
             ],
         },
         "ollama": {
             "url": "http://localhost:11434",
             "model": "llama2",
-            "tokens": 1024,
         },
     },
 }

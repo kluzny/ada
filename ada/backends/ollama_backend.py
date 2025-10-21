@@ -192,5 +192,41 @@ class OllamaBackend(Base):
             logger.warning(f"Failed to list models from Ollama server: {e}")
             return [self.model_name]  # Return at least the configured model
 
+    def context_window(self) -> int:
+        """
+        Get the context window size from the model metadata.
+
+        Attempts to retrieve num_ctx from the model using client.show.
+        Falls back to 2048 if unable to determine.
+
+        Returns:
+            The context window size in tokens
+        """
+        try:
+            model_info = self.client.show(self.model_name)
+            # Try to get num_ctx from model_info
+            if "model_info" in model_info:
+                model_data = model_info["model_info"]
+                # Check various possible locations for context size
+                if isinstance(model_data, dict):
+                    # Some models store it directly
+                    if "num_ctx" in model_data:
+                        return model_data["num_ctx"]
+                    # Some store it in a context_length field
+                    if "context_length" in model_data:
+                        return model_data["context_length"]
+
+            # Try to get from parameters
+            if "parameters" in model_info:
+                params = model_info["parameters"]
+                if "num_ctx" in params:
+                    return int(params["num_ctx"])
+
+            logger.debug(f"Could not find num_ctx in model metadata, defaulting to 2048")
+            return 2048
+        except Exception as e:
+            logger.warning(f"Failed to get context window from Ollama: {e}, defaulting to 2048")
+            return 2048
+
     def __str__(self) -> str:
         return f"OllamaBackend(model={self.model_name}, url={self.url})"
