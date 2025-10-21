@@ -1,5 +1,5 @@
 from typing import cast
-from ollama._types import ChatResponse
+from ollama._types import ChatResponse, Message
 
 import pytest
 from unittest.mock import Mock, patch
@@ -194,13 +194,17 @@ def test_convert_response_with_tool_calls(sample_config, mock_ollama_client):
     """Test response conversion with tool calls."""
     backend = OllamaBackend(sample_config)
 
+    tool_call = Message.ToolCall(
+        function=Message.ToolCall.Function(name="test", arguments={})
+    )
+
     ollama_response = cast(
         ChatResponse,
         {
             "message": {
                 "role": "assistant",
                 "content": "Using tool",
-                "tool_calls": [{"id": "1", "function": {"name": "test"}}],
+                "tool_calls": [tool_call],
             },
             "done": True,
             "prompt_eval_count": 10,
@@ -211,6 +215,15 @@ def test_convert_response_with_tool_calls(sample_config, mock_ollama_client):
 
     assert "tool_calls" in openai_response["choices"][0]["message"]
     assert len(openai_response["choices"][0]["message"]["tool_calls"]) == 1
+    # Verify the tool call was converted to OpenAI format
+    assert (
+        openai_response["choices"][0]["message"]["tool_calls"][0]["type"] == "function"
+    )
+    assert "function" in openai_response["choices"][0]["message"]["tool_calls"][0]
+    assert (
+        openai_response["choices"][0]["message"]["tool_calls"][0]["function"]["name"]
+        == "test"
+    )
 
 
 def test_str_representation(sample_config, mock_ollama_client):
@@ -436,16 +449,16 @@ def test_convert_response_with_missing_token_counts(sample_config, mock_ollama_c
 
 
 def test_convert_response_preserves_tool_calls(sample_config, mock_ollama_client):
-    """Test _convert_response preserves tool_calls in message."""
+    """Test _convert_response converts tool_calls to OpenAI format."""
     backend = OllamaBackend(sample_config)
 
-    # Ollama response with tool_calls
+    # Ollama response with tool_calls (Message.ToolCall objects)
     tool_calls = [
-        {
-            "id": "call_123",
-            "type": "function",
-            "function": {"name": "get_weather", "arguments": '{"location": "SF"}'},
-        }
+        Message.ToolCall(
+            function=Message.ToolCall.Function(
+                name="get_weather", arguments={"location": "SF"}
+            )
+        )
     ]
 
     ollama_response = cast(
@@ -464,9 +477,14 @@ def test_convert_response_preserves_tool_calls(sample_config, mock_ollama_client
 
     openai_response = backend._convert_response(ollama_response)
 
-    # Should preserve tool_calls
+    # Should convert tool_calls to OpenAI format
     assert "tool_calls" in openai_response["choices"][0]["message"]
-    assert openai_response["choices"][0]["message"]["tool_calls"] == tool_calls
+    assert len(openai_response["choices"][0]["message"]["tool_calls"]) == 1
+    tool_call = openai_response["choices"][0]["message"]["tool_calls"][0]
+    assert tool_call["type"] == "function"
+    assert tool_call["function"]["name"] == "get_weather"
+    # Arguments should be JSON string in OpenAI format
+    assert isinstance(tool_call["function"]["arguments"], str)
 
 
 def test_convert_response_with_empty_message_dict(sample_config, mock_ollama_client):
