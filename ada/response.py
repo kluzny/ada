@@ -35,7 +35,7 @@ class Response:
     def __choose(self) -> dict:
         return self.source["choices"][0]
 
-    def __maybe_json(self, content: str | None) -> dict | str:
+    def __maybe_json(self, content: str) -> dict | str:
         try:
             parsed = json.loads(content)
             logger.info("content parsed as json")
