@@ -7,6 +7,8 @@ This module provides the OllamaBackend class for using models via Ollama.
 from typing import Any
 import ollama
 
+from ollama import ChatResponse
+
 from .base import Base
 from ada.logger import build_logger
 
@@ -29,13 +31,13 @@ class OllamaBackend(Base):
             config: Configuration dictionary with keys:
                 - model: Name of the Ollama model (e.g., "llama2", "mistral")
                 - url: Ollama server URL (default: http://localhost:11434)
-                - tokens: Context window size (for warnings)
         """
         super().__init__(config)
 
-        self.model_name = config.get("model")
-        if not self.model_name:
-            raise ValueError("'model' is required in ollama backend configuration")
+        try:
+            self.model_name: str = config["model"]
+        except KeyError:
+            raise ValueError("a configured 'model' is required to initialize Ollama")
 
         # Get the Ollama server URL
         self.url = config.get("url", "http://localhost:11434")
@@ -73,11 +75,11 @@ class OllamaBackend(Base):
         logger.debug(f"generating completion with {len(messages)} messages")
 
         # Build options dict for Ollama
-        options = {
+        options: dict[str, Any] = {
             "temperature": temperature,
         }
 
-        if stop:
+        if stop is not None:
             options["stop"] = stop
 
         # Ollama uses "num_predict" instead of "max_tokens"
@@ -93,18 +95,14 @@ class OllamaBackend(Base):
                     messages=messages,
                     tools=tools,
                     options=options,
-                    format="json"
-                    if response_format and response_format.get("type") == "json_object"
-                    else None,
+                    format="json",
                 )
             else:
                 response = self.client.chat(
                     model=self.model_name,
                     messages=messages,
                     options=options,
-                    format="json"
-                    if response_format and response_format.get("type") == "json_object"
-                    else None,
+                    format="json",
                 )
 
             # Convert Ollama response to OpenAI-compatible format
@@ -114,7 +112,7 @@ class OllamaBackend(Base):
             logger.error(f"Ollama error: {e}")
             raise
 
-    def _convert_response(self, ollama_response: dict) -> dict:
+    def _convert_response(self, ollama_response: ChatResponse) -> dict:
         """
         Convert Ollama response format to OpenAI-compatible format.
 

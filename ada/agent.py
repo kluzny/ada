@@ -226,7 +226,8 @@ class Agent:
             query: The user's input message
         """
         self.conversation.append(WHOAREYOU, query)
-        response = Response(self.__think(messages=self.conversation.messages()))
+        thought = self.__think(messages=self.conversation.messages())
+        response = Response(thought)
 
         logger.info(f"using {response.tokens} tokens")
         if response.tokens >= 0.75 * self.max_content_length:

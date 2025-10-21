@@ -1,3 +1,6 @@
+from typing import cast
+from ollama._types import ChatResponse
+
 import pytest
 from unittest.mock import Mock, patch
 from ada.backends.ollama_backend import OllamaBackend
@@ -100,12 +103,16 @@ def test_chat_completion_without_tools(sample_config, mock_ollama_client):
     """Test chat_completion method without tools."""
     backend = OllamaBackend(sample_config)
 
-    ollama_response = {
-        "message": {"role": "assistant", "content": "Hello!"},
-        "done": True,
-        "prompt_eval_count": 10,
-        "eval_count": 5,
-    }
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {"role": "assistant", "content": "Hello!"},
+            "done": True,
+            "prompt_eval_count": 10,
+            "eval_count": 5,
+        },
+    )
+
     mock_ollama_client.chat.return_value = ollama_response
 
     messages = [{"role": "user", "content": "Hello"}]
@@ -126,12 +133,15 @@ def test_chat_completion_with_tools(sample_config, mock_ollama_client):
     backend = OllamaBackend(sample_config)
 
     tools = [{"type": "function", "function": {"name": "test_tool"}}]
-    ollama_response = {
-        "message": {"role": "assistant", "content": "Using tool"},
-        "done": True,
-        "prompt_eval_count": 10,
-        "eval_count": 5,
-    }
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {"role": "assistant", "content": "Using tool"},
+            "done": True,
+            "prompt_eval_count": 10,
+            "eval_count": 5,
+        },
+    )
     mock_ollama_client.chat.return_value = ollama_response
 
     messages = [{"role": "user", "content": "Test"}]
@@ -147,12 +157,15 @@ def test_chat_completion_with_json_format(sample_config, mock_ollama_client):
     """Test chat_completion with JSON response format."""
     backend = OllamaBackend(sample_config)
 
-    ollama_response = {
-        "message": {"role": "assistant", "content": '{"key": "value"}'},
-        "done": True,
-        "prompt_eval_count": 10,
-        "eval_count": 5,
-    }
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {"role": "assistant", "content": '{"key": "value"}'},
+            "done": True,
+            "prompt_eval_count": 10,
+            "eval_count": 5,
+        },
+    )
     mock_ollama_client.chat.return_value = ollama_response
 
     messages = [{"role": "user", "content": "Test"}]
@@ -181,17 +194,19 @@ def test_convert_response_with_tool_calls(sample_config, mock_ollama_client):
     """Test response conversion with tool calls."""
     backend = OllamaBackend(sample_config)
 
-    ollama_response = {
-        "message": {
-            "role": "assistant",
-            "content": "Using tool",
-            "tool_calls": [{"id": "1", "function": {"name": "test"}}],
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {
+                "role": "assistant",
+                "content": "Using tool",
+                "tool_calls": [{"id": "1", "function": {"name": "test"}}],
+            },
+            "done": True,
+            "prompt_eval_count": 10,
+            "eval_count": 5,
         },
-        "done": True,
-        "prompt_eval_count": 10,
-        "eval_count": 5,
-    }
-
+    )
     openai_response = backend._convert_response(ollama_response)
 
     assert "tool_calls" in openai_response["choices"][0]["message"]
@@ -355,11 +370,14 @@ def test_convert_response_with_missing_message(sample_config, mock_ollama_client
     backend = OllamaBackend(sample_config)
 
     # Ollama response without message field
-    ollama_response = {
-        "done": True,
-        "prompt_eval_count": 10,
-        "eval_count": 5,
-    }
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "done": True,
+            "prompt_eval_count": 10,
+            "eval_count": 5,
+        },
+    )
 
     openai_response = backend._convert_response(ollama_response)
 
@@ -378,12 +396,15 @@ def test_convert_response_with_zero_tokens(sample_config, mock_ollama_client):
     backend = OllamaBackend(sample_config)
 
     # Ollama response with zero tokens
-    ollama_response = {
-        "message": {"role": "assistant", "content": ""},
-        "done": True,
-        "prompt_eval_count": 0,
-        "eval_count": 0,
-    }
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {"role": "assistant", "content": ""},
+            "done": True,
+            "prompt_eval_count": 0,
+            "eval_count": 0,
+        },
+    )
 
     openai_response = backend._convert_response(ollama_response)
 
@@ -398,10 +419,13 @@ def test_convert_response_with_missing_token_counts(sample_config, mock_ollama_c
     backend = OllamaBackend(sample_config)
 
     # Ollama response without token count fields
-    ollama_response = {
-        "message": {"role": "assistant", "content": "test response"},
-        "done": True,
-    }
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {"role": "assistant", "content": "test response"},
+            "done": True,
+        },
+    )
 
     openai_response = backend._convert_response(ollama_response)
 
@@ -424,16 +448,19 @@ def test_convert_response_preserves_tool_calls(sample_config, mock_ollama_client
         }
     ]
 
-    ollama_response = {
-        "message": {
-            "role": "assistant",
-            "content": "Let me check the weather",
-            "tool_calls": tool_calls,
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {
+                "role": "assistant",
+                "content": "Let me check the weather",
+                "tool_calls": tool_calls,
+            },
+            "done": True,
+            "prompt_eval_count": 20,
+            "eval_count": 10,
         },
-        "done": True,
-        "prompt_eval_count": 20,
-        "eval_count": 10,
-    }
+    )
 
     openai_response = backend._convert_response(ollama_response)
 
@@ -446,10 +473,13 @@ def test_convert_response_with_empty_message_dict(sample_config, mock_ollama_cli
     """Test _convert_response with empty message dictionary."""
     backend = OllamaBackend(sample_config)
 
-    ollama_response = {
-        "message": {},
-        "done": True,
-    }
+    ollama_response = cast(
+        ChatResponse,
+        {
+            "message": {},
+            "done": True,
+        },
+    )
 
     openai_response = backend._convert_response(ollama_response)
 
