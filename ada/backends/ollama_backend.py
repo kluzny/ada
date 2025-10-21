@@ -222,10 +222,14 @@ class OllamaBackend(Base):
                 if "num_ctx" in params:
                     return int(params["num_ctx"])
 
-            logger.debug(f"Could not find num_ctx in model metadata, defaulting to 2048")
+            logger.debug(
+                "Could not find num_ctx in model metadata, defaulting to 2048"
+            )
             return 2048
         except Exception as e:
-            logger.warning(f"Failed to get context window from Ollama: {e}, defaulting to 2048")
+            logger.warning(
+                f"Failed to get context window from Ollama: {e}, defaulting to 2048"
+            )
             return 2048
 
     def __str__(self) -> str:

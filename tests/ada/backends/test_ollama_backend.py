@@ -256,3 +256,204 @@ def test_context_window_with_gpt_oss():
 
     # gpt-oss should have a reasonable context window (at least 2048)
     assert context_size >= 2048
+
+
+def test_context_window_from_model_info_num_ctx(sample_config, mock_ollama_client):
+    """Test context_window extracts num_ctx from model_info."""
+    backend = OllamaBackend(sample_config)
+
+    # Mock client.show to return model_info with num_ctx
+    mock_ollama_client.show.return_value = {"model_info": {"num_ctx": 4096}}
+
+    context_size = backend.context_window()
+
+    assert context_size == 4096
+    mock_ollama_client.show.assert_called_once_with("llama2")
+
+
+def test_context_window_from_model_info_context_length(
+    sample_config, mock_ollama_client
+):
+    """Test context_window extracts context_length from model_info."""
+    backend = OllamaBackend(sample_config)
+
+    # Mock client.show to return model_info with context_length
+    mock_ollama_client.show.return_value = {"model_info": {"context_length": 8192}}
+
+    context_size = backend.context_window()
+
+    assert context_size == 8192
+    mock_ollama_client.show.assert_called_once_with("llama2")
+
+
+def test_context_window_from_parameters(sample_config, mock_ollama_client):
+    """Test context_window extracts num_ctx from parameters."""
+    backend = OllamaBackend(sample_config)
+
+    # Mock client.show to return parameters with num_ctx
+    mock_ollama_client.show.return_value = {"parameters": {"num_ctx": "16384"}}
+
+    context_size = backend.context_window()
+
+    assert context_size == 16384
+    mock_ollama_client.show.assert_called_once_with("llama2")
+
+
+def test_context_window_fallback_when_show_fails(sample_config, mock_ollama_client):
+    """Test context_window returns 2048 when client.show fails."""
+    backend = OllamaBackend(sample_config)
+
+    # Mock client.show to raise exception
+    mock_ollama_client.show.side_effect = Exception("Connection error")
+
+    context_size = backend.context_window()
+
+    assert context_size == 2048
+
+
+def test_context_window_with_no_num_ctx(sample_config, mock_ollama_client):
+    """Test context_window returns 2048 when num_ctx not found."""
+    backend = OllamaBackend(sample_config)
+
+    # Mock client.show to return response without num_ctx
+    mock_ollama_client.show.return_value = {
+        "model_info": {"some_other_field": "value"},
+        "parameters": {"temperature": 0.7},
+    }
+
+    context_size = backend.context_window()
+
+    assert context_size == 2048
+
+
+def test_context_window_with_empty_model_info(sample_config, mock_ollama_client):
+    """Test context_window handles empty model_info."""
+    backend = OllamaBackend(sample_config)
+
+    # Mock client.show to return empty model_info
+    mock_ollama_client.show.return_value = {"model_info": {}}
+
+    context_size = backend.context_window()
+
+    assert context_size == 2048
+
+
+def test_context_window_with_non_dict_model_info(sample_config, mock_ollama_client):
+    """Test context_window handles non-dict model_info."""
+    backend = OllamaBackend(sample_config)
+
+    # Mock client.show to return non-dict model_info
+    mock_ollama_client.show.return_value = {"model_info": "not a dict"}
+
+    context_size = backend.context_window()
+
+    assert context_size == 2048
+
+
+def test_convert_response_with_missing_message(sample_config, mock_ollama_client):
+    """Test _convert_response handles missing message gracefully."""
+    backend = OllamaBackend(sample_config)
+
+    # Ollama response without message field
+    ollama_response = {
+        "done": True,
+        "prompt_eval_count": 10,
+        "eval_count": 5,
+    }
+
+    openai_response = backend._convert_response(ollama_response)
+
+    # Should have valid structure with empty/None content
+    assert "choices" in openai_response
+    assert len(openai_response["choices"]) == 1
+    assert "message" in openai_response["choices"][0]
+    assert openai_response["choices"][0]["message"]["role"] == "assistant"
+    assert openai_response["choices"][0]["message"]["content"] is None
+    assert "usage" in openai_response
+    assert openai_response["usage"]["total_tokens"] == 15
+
+
+def test_convert_response_with_zero_tokens(sample_config, mock_ollama_client):
+    """Test _convert_response handles zero token counts."""
+    backend = OllamaBackend(sample_config)
+
+    # Ollama response with zero tokens
+    ollama_response = {
+        "message": {"role": "assistant", "content": ""},
+        "done": True,
+        "prompt_eval_count": 0,
+        "eval_count": 0,
+    }
+
+    openai_response = backend._convert_response(ollama_response)
+
+    # Should calculate usage correctly
+    assert openai_response["usage"]["prompt_tokens"] == 0
+    assert openai_response["usage"]["completion_tokens"] == 0
+    assert openai_response["usage"]["total_tokens"] == 0
+
+
+def test_convert_response_with_missing_token_counts(sample_config, mock_ollama_client):
+    """Test _convert_response handles missing token counts."""
+    backend = OllamaBackend(sample_config)
+
+    # Ollama response without token count fields
+    ollama_response = {
+        "message": {"role": "assistant", "content": "test response"},
+        "done": True,
+    }
+
+    openai_response = backend._convert_response(ollama_response)
+
+    # Should default to 0 for missing counts
+    assert openai_response["usage"]["prompt_tokens"] == 0
+    assert openai_response["usage"]["completion_tokens"] == 0
+    assert openai_response["usage"]["total_tokens"] == 0
+
+
+def test_convert_response_preserves_tool_calls(sample_config, mock_ollama_client):
+    """Test _convert_response preserves tool_calls in message."""
+    backend = OllamaBackend(sample_config)
+
+    # Ollama response with tool_calls
+    tool_calls = [
+        {
+            "id": "call_123",
+            "type": "function",
+            "function": {"name": "get_weather", "arguments": '{"location": "SF"}'},
+        }
+    ]
+
+    ollama_response = {
+        "message": {
+            "role": "assistant",
+            "content": "Let me check the weather",
+            "tool_calls": tool_calls,
+        },
+        "done": True,
+        "prompt_eval_count": 20,
+        "eval_count": 10,
+    }
+
+    openai_response = backend._convert_response(ollama_response)
+
+    # Should preserve tool_calls
+    assert "tool_calls" in openai_response["choices"][0]["message"]
+    assert openai_response["choices"][0]["message"]["tool_calls"] == tool_calls
+
+
+def test_convert_response_with_empty_message_dict(sample_config, mock_ollama_client):
+    """Test _convert_response with empty message dictionary."""
+    backend = OllamaBackend(sample_config)
+
+    ollama_response = {
+        "message": {},
+        "done": True,
+    }
+
+    openai_response = backend._convert_response(ollama_response)
+
+    # Should handle gracefully
+    assert "choices" in openai_response
+    assert openai_response["choices"][0]["message"]["role"] == "assistant"
+    assert openai_response["choices"][0]["message"]["content"] is None

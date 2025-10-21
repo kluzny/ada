@@ -45,7 +45,7 @@ def mock_llama():
 
 def test_llama_cpp_backend_initialization(sample_config, mock_model, mock_llama):
     """Test LlamaCppBackend initialization."""
-    with patch.object(LlamaCppBackend, 'context_window', return_value=2048):
+    with patch.object(LlamaCppBackend, "context_window", return_value=2048):
         backend = LlamaCppBackend(sample_config)
 
         assert backend.model_name == "test-model"
@@ -206,3 +206,93 @@ def test_context_window_with_tiny_llm():
 
     # Should match the llama.context_length from GGUF metadata (1024 for Tiny-LLM)
     assert context_size == 1024
+
+
+def test_context_window_fallback_to_2048(mock_model, mock_llama):
+    """Test context_window returns 2048 when metadata reading fails."""
+    config = {
+        "model": "test-model",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "test-model",
+                "url": "https://example.com/test-model.gguf",
+            }
+        ],
+    }
+
+    with patch.object(LlamaCppBackend, "context_window", return_value=2048):
+        backend = LlamaCppBackend(config)
+
+    # Mock the private method to raise an exception
+    with patch.object(
+        backend,
+        "_LlamaCppBackend__get_maximum_context_from_llm_instance",
+        side_effect=Exception("Failed to read metadata"),
+    ):
+        context_size = backend.context_window()
+
+        # Should fall back to 2048
+        assert context_size == 2048
+
+
+def test_context_window_with_missing_metadata(mock_model):
+    """Test context_window handles missing llama.context_length gracefully."""
+    config = {
+        "model": "test-model",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "test-model",
+                "url": "https://example.com/test-model.gguf",
+            }
+        ],
+    }
+
+    # Mock Llama instance with metadata but without llama.context_length
+    with patch("ada.backends.llama_cpp_backend.Llama") as mock_llama_class:
+        mock_instance = Mock()
+        mock_instance.metadata = {"some_key": "some_value"}  # No llama.context_length
+        mock_llama_class.return_value = mock_instance
+
+        with patch.object(LlamaCppBackend, "context_window", return_value=2048):
+            backend = LlamaCppBackend(config)
+
+        # Reset the patch to test the actual method
+        backend.llm = mock_instance
+
+        # Should raise ValueError and fall back to 2048
+        context_size = backend.context_window()
+        assert context_size == 2048
+
+
+def test_context_window_with_no_metadata_attribute(mock_model):
+    """Test context_window handles llm instance without metadata attribute."""
+    config = {
+        "model": "test-model",
+        "threads": 2,
+        "verbose": False,
+        "models": [
+            {
+                "name": "test-model",
+                "url": "https://example.com/test-model.gguf",
+            }
+        ],
+    }
+
+    # Mock Llama instance without metadata attribute
+    with patch("ada.backends.llama_cpp_backend.Llama") as mock_llama_class:
+        mock_instance = Mock()
+        del mock_instance.metadata  # Remove metadata attribute
+        mock_llama_class.return_value = mock_instance
+
+        with patch.object(LlamaCppBackend, "context_window", return_value=2048):
+            backend = LlamaCppBackend(config)
+
+        backend.llm = mock_instance
+
+        # Should fall back to 2048
+        context_size = backend.context_window()
+        assert context_size == 2048
