@@ -26,9 +26,7 @@ $ python main.py # a minimal REPL for the agent
 
 ADA supports multiple LLM backends for flexible model deployment. You can switch between backends by changing the `backend` key in your `config.json`.
 
-### Available Backends
-
-#### llama-cpp (Local GGUF Models)
+### llama-cpp (Local GGUF Models)
 
 The **llama-cpp** backend runs quantized GGUF models locally using [llama-cpp-python](https://github.com/abetlen/llama-cpp-python). This backend is ideal for running models entirely offline with full privacy.
 
@@ -81,9 +79,10 @@ Refer to the official documentation for your specific GPU [llama-cpp-python#inst
 - `verbose`: Enable verbose llama.cpp logging (default: false)
 
 **Finding Models:**
+
 Browse quantized GGUF models on [Hugging Face](https://huggingface.co/), search for models with the "GGUF" tag.
 
-#### ollama (Local Model Server)
+### ollama (Local Model Server)
 
 The **ollama** backend connects to a running [Ollama](https://ollama.ai/) server for model inference. Ollama provides an easy-to-use model management system with a simple CLI.
 
@@ -96,6 +95,7 @@ The **ollama** backend connects to a running [Ollama](https://ollama.ai/) server
 - Built-in model quantization and optimization
 
 **Prerequisites:**
+
 Install and start Ollama:
 
 ```bash
