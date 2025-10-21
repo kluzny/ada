@@ -27,7 +27,12 @@ class Response:
     tokens: int = 0  # number of tokens used in the response
 
     def __init__(self, source: dict) -> None:
-        logger.info("initialising response with \n" + dump(source))
+        try:
+            logger.info("initialising response with \n" + dump(source))
+        except Exception as e:
+            logger.error(f"{e}: error initialising response with {source}")
+            raise e
+
         self.source = source
         self.tokens = source.get("usage", {}).get("total_tokens", 0)
         self.__parse()
@@ -86,15 +91,23 @@ class Response:
         ]
 
         for tool_function in tool_functions:
+            returns.append(self.__invoke_tool(tool_function))
+
+        return "\n".join(returns)
+
+    def __invoke_tool(self, tool_function) -> str:
+        try:
             function_signature = tool_function["function"]
             function_name = function_signature["name"]
             keyword_args = json.loads(function_signature["arguments"])
 
             logger.info(f"invoking {function_name} with {keyword_args}")
             function = globals()[function_name]
-            returns.append(function(**keyword_args))
 
-        return "\n".join(returns)
+            return function(**keyword_args)
+        except Exception as e:
+            logger.warning(f"{e}: unable to invoke tool \n{tool_function}")
+            return ""
 
     def __format(self, parsed: dict) -> str:
         output = []

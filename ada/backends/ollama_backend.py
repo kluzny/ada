@@ -4,10 +4,13 @@ Ollama backend implementation.
 This module provides the OllamaBackend class for using models via Ollama.
 """
 
-from typing import Any
+import json
 import ollama
 
 from ollama import ChatResponse
+from ollama._types import Message
+
+from typing import Any
 
 from .base import Base
 from ada.logger import build_logger
@@ -161,11 +164,23 @@ class OllamaBackend(Base):
 
         # Include tool_calls if present
         if "tool_calls" in message:
-            openai_response["choices"][0]["message"]["tool_calls"] = message[
-                "tool_calls"
+            openai_response["choices"][0]["message"]["tool_calls"] = [
+                self.__open_ai_compatabile_tool_call(tool_call)
+                for tool_call in message["tool_calls"]
             ]
 
         return openai_response
+
+    def __open_ai_compatabile_tool_call(self, tool_call: Message.ToolCall) -> dict:
+        function_signature = tool_call.function
+
+        return {
+            "type": "function",
+            "function": {
+                "name": function_signature.name,
+                "arguments": json.dumps(function_signature.arguments),
+            },
+        }
 
     def current_model(self) -> str:
         """
