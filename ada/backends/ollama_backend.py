@@ -222,9 +222,7 @@ class OllamaBackend(Base):
                 if "num_ctx" in params:
                     return int(params["num_ctx"])
 
-            logger.debug(
-                "Could not find num_ctx in model metadata, defaulting to 2048"
-            )
+            logger.debug("Could not find num_ctx in model metadata, defaulting to 2048")
             return 2048
         except Exception as e:
             logger.warning(

@@ -7,7 +7,7 @@ import json
 DEFAULT_WIDTH = 80
 
 
-def block(text: str, character: str = "*", length: int = DEFAULT_WIDTH):
+def block(text: str, character: str = "*", length: int = DEFAULT_WIDTH) -> str:
     output = ""
     output += line()
     output += text.center(length, character) + "\n"
@@ -15,7 +15,7 @@ def block(text: str, character: str = "*", length: int = DEFAULT_WIDTH):
     return output
 
 
-def line(character: str = "*", length: int = DEFAULT_WIDTH):
+def line(character: str = "*", length: int = DEFAULT_WIDTH) -> str:
     return character * length + "\n"
 
 

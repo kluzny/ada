@@ -22,5 +22,5 @@ class Entry(BaseModel):
             "content": content,
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.author}: {self.body}"

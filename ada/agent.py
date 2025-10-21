@@ -264,7 +264,9 @@ class Agent:
 
         raise TerminateTaskGroup
 
-    def __think(self, messages: list[dict] = []):
+    def __think(self, messages: list[dict] | None = None) -> dict:
+        if messages is None:
+            messages = []
         messages.insert(0, self.__system_prompt())
 
         return self.backend.chat_completion(
