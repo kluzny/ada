@@ -1,6 +1,6 @@
 {
   "log_level": "DEBUG",
-  "record": false,
+  "record": true,
   "history": true,
   "backend": "llama-cpp",
   "backends": {
