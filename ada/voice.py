@@ -1,5 +1,6 @@
 import os
 import pyaudio
+import sounddevice  # https://stackoverflow.com/questions/36956083/how-can-the-terminal-output-of-executables-run-by-python-functions-be-silenced-i  # noqa: F401
 
 from piper import PiperVoice, SynthesisConfig
 from piper.download_voices import download_voice
