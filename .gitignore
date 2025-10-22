@@ -15,3 +15,5 @@ tmp
 !.ada/llms/.gitkeep
 !.ada/voices
 !.ada/voices/.gitkeep
+!.ada/whisper
+!.ada/whisper/.gitkeep
