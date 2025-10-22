@@ -42,6 +42,7 @@ class Agent:
         self.persona = Personas.DEFAULT
         if config.voice():
             self.voice = Voice(config.voice())  # pyright: ignore[reportArgumentType] not bool under if
+            self.voice.say("Hello World!")
         self.__init_prompt(config)
 
     def __init_prompt(self, config: Config) -> None:

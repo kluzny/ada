@@ -1,5 +1,7 @@
 import os
+import wave
 
+from piper import PiperVoice, SynthesisConfig
 from piper.download_voices import download_voice
 from pathlib import Path
 
@@ -23,6 +25,18 @@ class Voice:
 
         self.__prepare()
 
+        self.voice_config = SynthesisConfig(
+            volume=1.0,  # loudness
+            length_scale=1.0,  # slowness
+            noise_scale=1.0,  # audio variation
+            noise_w_scale=1.0,  # speaking variation
+            normalize_audio=False,  # use raw audio from voice
+        )
+
+        # TODO: eventually need to move use_cude to configuration or auto detection
+        # self.piper_voice = PiperVoice.load(self.get_model_path(), use_cuda=True)
+        self.piper_voice = PiperVoice.load(self.get_model_path())
+
     def __prepare(self) -> None:
         """Prepare the voices directory and download voice files if needed."""
         os.makedirs(self.CACHE_DIR, exist_ok=True)
@@ -34,6 +48,15 @@ class Voice:
             logger.info(f"voice {self.voice} saved to {self.CACHE_DIR}")
         else:
             logger.info(f"voice {self.voice} exists at {self.CACHE_DIR}")
+
+    def say(self, message: str) -> None:
+        # TODO: can we stream this?
+        with wave.open("piper.wave", "wb") as wave_file:
+            self.piper_voice.synthesize_wav(
+                message,
+                wave_file,
+                syn_config=self.voice_config,
+            )
 
     def __voice_exists(self) -> bool:
         """
