@@ -152,6 +152,33 @@ To switch between backends, simply update the `backend` field in your `config.js
 
 Both backend configurations can remain in your config file - only the active backend specified by the `backend` field will be used.
 
+## Text-to-Speech (TTS)
+
+ADA includes integrated text-to-speech capabilities powered by [Piper TTS](https://github.com/OHF-Voice/piper1-gpl), a high-quality open-source neural text-to-speech system.
+
+**Features:**
+
+- High-quality neural speech synthesis
+- Streaming audio directly to speakers (no disk files)
+- Real-time playback as audio is generated
+- Extensive voice model library with multiple languages and genders
+- Automatic model download and caching to `voices/` directory
+- Fully offline operation (after initial voice model download)
+
+**Configuration:**
+
+Enable TTS by adding the `tts` option to your `config.json`:
+
+```json
+{
+  "tts": "en_US-amy-medium"
+}
+```
+
+**Available Voices:**
+
+Piper provides voices in the format `<language>-<voice>-<quality>`. For the complete list of available voices, see the [Piper Voice Models](https://huggingface.co/rhasspy/piper-voices) collection.
+
 ## Personas
 
 Ada ships with some default personas that define system prompts for various modes of operation.
