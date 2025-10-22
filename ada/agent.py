@@ -16,6 +16,7 @@ from ada.exceptions import TerminateTaskGroup
 from ada.looper import Looper
 from ada.formatter import block
 from ada.backends import Base as Backend, LlamaCppBackend, OllamaBackend
+from ada.voice import Voice
 
 
 WHOAMI = "ADA"
@@ -39,6 +40,9 @@ class Agent:
         logger.info(f"max_content_length: {self.max_content_length}")
         self.conversation: Conversation = Conversation(record=config.record())
         self.persona = Personas.DEFAULT
+        if config.voice():
+            self.voice = Voice(config.voice())  # pyright: ignore[reportArgumentType] not bool under if
+            self.voice.say("Hello World!")
         self.__init_prompt(config)
 
     def __init_prompt(self, config: Config) -> None:
@@ -70,6 +74,9 @@ class Agent:
 
     def say(self, input: str) -> None:
         print(f"{WHOAMI}: {input}")
+
+        if self.config.voice():
+            self.voice.say(input)
 
     async def __switch_persona(self, name: str, looper: Looper) -> bool:
         """

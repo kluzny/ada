@@ -8,6 +8,7 @@ EXAMPLE_CONFIG = {
     "log_level": "DEBUG",
     "record": False,
     "history": False,
+    "tts": "en_US-amy-medium",
     "backend": "llama-cpp",
     "backends": {
         "llama-cpp": {
@@ -101,3 +102,27 @@ def test_backend_config_missing_backends_section():
 
     with pytest.raises(ValueError, match="Missing 'backends' configuration"):
         config.backend_config()
+
+
+def test_voice_with_valid_tts(example_config):
+    """Test voice() returns the TTS voice model when configured."""
+    voice = example_config.voice()
+    assert voice == "en_US-amy-medium"
+
+
+def test_voice_with_missing_tts():
+    """Test voice() returns False when tts key is missing."""
+    config = Config.__new__(Config)
+    config.loaded = {"log_level": "DEBUG"}
+
+    voice = config.voice()
+    assert voice is False
+
+
+def test_voice_with_blank_tts():
+    """Test voice() returns False when tts value is blank."""
+    config = Config.__new__(Config)
+    config.loaded = {"log_level": "DEBUG", "tts": ""}
+
+    voice = config.voice()
+    assert voice is False

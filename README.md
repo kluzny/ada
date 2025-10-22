@@ -152,6 +152,33 @@ To switch between backends, simply update the `backend` field in your `config.js
 
 Both backend configurations can remain in your config file - only the active backend specified by the `backend` field will be used.
 
+## Text-to-Speech (TTS)
+
+ADA includes integrated text-to-speech capabilities powered by [Piper TTS](https://github.com/OHF-Voice/piper1-gpl), a high-quality open-source neural text-to-speech system.
+
+**Features:**
+
+- High-quality neural speech synthesis
+- Streaming audio directly to speakers (no disk files)
+- Real-time playback as audio is generated
+- Extensive voice model library with multiple languages and genders
+- Automatic model download and caching to `voices/` directory
+- Fully offline operation (after initial voice model download)
+
+**Configuration:**
+
+Enable TTS by adding the `tts` option to your `config.json`:
+
+```json
+{
+  "tts": "en_US-amy-medium"
+}
+```
+
+**Available Voices:**
+
+Piper provides voices in the format `<language>-<voice>-<quality>`. For the complete list of available voices, see the [Piper Voice Models](https://huggingface.co/rhasspy/piper-voices) collection.
+
 ## Personas
 
 Ada ships with some default personas that define system prompts for various modes of operation.
@@ -189,7 +216,6 @@ It's ok to hallucinate in service of providing an additional *pun*portunity.
 
 - tools for file system access e.g. find, tree, cat, diff
 - audio input STT, with wake word 'ada'
-- audio output TTS
 - multi-step tasks
 - command autocomplete
 - resumable/forkable conversations
@@ -198,6 +224,16 @@ It's ok to hallucinate in service of providing an additional *pun*portunity.
 - provide a checksum when the model is downloaded
 - logging happens in a separate frame
 - gif/vid of Ada, doing the thing
+
+## TODO
+
+- Move the audio to a seperate thread, so that input can continue or queue.
+- Consider how to interrupt ada to stop speaking. Perhaps a queue or bus we send a stop command to?
+- Does voice synthesis take so much gpu resource, that we can't do inference. Does the next prompt in queue need to wait for speach to complete?
+- Command to repeat the last thing Ada says, /repeat
+- Audit all the agent say calls, to make sure Ada isn't 'talking' when she doesn't need to e.g. help output, menus, code blocks
+- Response objects should have a .body method for all text, then a speakable method for text that should be spoken, again to not read code blocks
+- Think about how to get better phonetic answers, for instance can we return phonemes alongside text in the llm output, could that simply be infered by an llm pass after?
 
 ## Bugs
 

@@ -2,6 +2,7 @@
   "log_level": "DEBUG",
   "record": false,
   "history": false,
+  "tts": "",
   "backend": "llama-cpp",
   "backends": {
     "llama-cpp": {
