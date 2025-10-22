@@ -34,9 +34,9 @@ class Voice:
             normalize_audio=False,  # use raw audio from voice
         )
 
-        # TODO: eventually need to move use_cude to configuration or auto detection
-        # self.piper_voice = PiperVoice.load(self.get_model_path(), use_cuda=True)
-        self.piper_voice = PiperVoice.load(self.get_model_path())
+        # TODO: eventually need to move use_cuda to configuration or auto detection
+        # self.piper_voice = PiperVoice.load(self.__get_model_path(), use_cuda=True)
+        self.piper_voice = PiperVoice.load(self.__get_model_path())
 
     def __prepare(self) -> None:
         """Prepare the voices directory and download voice files if needed."""
@@ -126,7 +126,7 @@ class Voice:
             logger.error(f"failed to download voice {self.voice}: {e}")
             raise
 
-    def get_model_path(self) -> str:
+    def __get_model_path(self) -> str:
         """
         Get the path to the downloaded voice model file.
 
@@ -134,12 +134,3 @@ class Voice:
             Path to the .onnx model file
         """
         return os.path.join(self.CACHE_DIR, f"{self.voice}.onnx")
-
-    def get_config_path(self) -> str:
-        """
-        Get the path to the downloaded voice configuration file.
-
-        Returns:
-            Path to the .onnx.json configuration file
-        """
-        return os.path.join(self.CACHE_DIR, f"{self.voice}.onnx.json")

@@ -55,24 +55,6 @@ def test_voices_skips_download_when_exists(temp_voice_dir, mock_download_voice):
         mock_download_voice.assert_not_called()
 
 
-def test_voices_get_model_path(temp_voice_dir, mock_download_voice):
-    """Test get_model_path returns correct path."""
-    with patch("ada.voice.PiperVoice"):
-        voice = Voice("en_US-amy-medium")
-
-        expected_path = str(temp_voice_dir / "en_US-amy-medium.onnx")
-        assert voice.get_model_path() == expected_path
-
-
-def test_voices_get_config_path(temp_voice_dir, mock_download_voice):
-    """Test get_config_path returns correct path."""
-    with patch("ada.voice.PiperVoice"):
-        voice = Voice("en_US-amy-medium")
-
-        expected_path = str(temp_voice_dir / "en_US-amy-medium.onnx.json")
-        assert voice.get_config_path() == expected_path
-
-
 def test_voices_with_different_voice(temp_voice_dir, mock_download_voice):
     """Test Voice with a different voice identifier."""
     with patch("ada.voice.PiperVoice"):
