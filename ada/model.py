@@ -4,12 +4,13 @@ import urllib.request
 from prompt_toolkit.shortcuts import ProgressBar
 
 from ada.logger import build_logger
+from ada.constants import ARTIFACT_DIR
 
 logger = build_logger(__name__)
 
 
 class Model:
-    CACHE_DIR = "models"
+    CACHE_DIR = ARTIFACT_DIR / "llms"
     CHUNK_SIZE = 1024  # 1kb
 
     def __init__(self, url: str):

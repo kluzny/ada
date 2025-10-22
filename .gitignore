@@ -1,10 +1,6 @@
 activate
 __pycache__
 config.json
-models/*
-!models/.gitkeep
-voices/*
-!voices/.gitkeep
 memories/*
 !memories/.gitkeep
 conversations/*
@@ -13,3 +9,9 @@ logs/*
 !logs/.gitkeep
 .ada_history
 tmp
+.ada
+!.ada/.gitkeep
+!.ada/llms
+!.ada/llms/.gitkeep
+!.ada/voices
+!.ada/voices/.gitkeep

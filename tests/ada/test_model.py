@@ -10,7 +10,7 @@ def test_model():
 
         assert model.url == TEST_MODEL_URL
         assert model.name == "model.gguf"
-        assert model.path == "models/model.gguf"
+        assert model.path == ".ada/llms/model.gguf"
 
 
 def test_model_init_calls_prepare():
