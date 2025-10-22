@@ -3,6 +3,7 @@
   "record": true,
   "history": true,
   "tts": "en_US-amy-medium",
+  "stt": "medium.en",
   "backend": "llama-cpp",
   "backends": {
     "llama-cpp": {

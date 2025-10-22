@@ -35,6 +35,17 @@ class Config:
         tts = self.loaded.get("tts", "")
         return tts if tts else False
 
+    def listen(self) -> str | bool:
+        """
+        Get the STT (Speech-to-Text) model configuration.
+
+        Returns:
+            STT model string (e.g., "medium.en") if present and not blank,
+            otherwise False
+        """
+        stt = self.loaded.get("stt", "")
+        return stt if stt else False
+
     def backend(self) -> str:
         """
         Get the backend from configuration.

@@ -9,6 +9,7 @@ EXAMPLE_CONFIG = {
     "record": False,
     "history": False,
     "tts": "en_US-amy-medium",
+    "stt": "medium.en",
     "backend": "llama-cpp",
     "backends": {
         "llama-cpp": {
@@ -126,3 +127,36 @@ def test_voice_with_blank_tts():
 
     voice = config.voice()
     assert voice is False
+
+
+def test_listen_with_valid_stt(example_config):
+    """Test listen() returns the STT model when configured."""
+    listen_model = example_config.listen()
+    assert listen_model == "medium.en"
+
+
+def test_listen_with_missing_stt():
+    """Test listen() returns False when stt key is missing."""
+    config = Config.__new__(Config)
+    config.loaded = {"log_level": "DEBUG"}
+
+    listen_model = config.listen()
+    assert listen_model is False
+
+
+def test_listen_with_blank_stt():
+    """Test listen() returns False when stt value is blank."""
+    config = Config.__new__(Config)
+    config.loaded = {"log_level": "DEBUG", "stt": ""}
+
+    listen_model = config.listen()
+    assert listen_model is False
+
+
+def test_listen_with_different_model():
+    """Test listen() with different STT model."""
+    config = Config.__new__(Config)
+    config.loaded = {"log_level": "DEBUG", "stt": "small.en"}
+
+    listen_model = config.listen()
+    assert listen_model == "small.en"
