@@ -189,7 +189,6 @@ It's ok to hallucinate in service of providing an additional *pun*portunity.
 
 - tools for file system access e.g. find, tree, cat, diff
 - audio input STT, with wake word 'ada'
-- audio output TTS
 - multi-step tasks
 - command autocomplete
 - resumable/forkable conversations
@@ -198,6 +197,12 @@ It's ok to hallucinate in service of providing an additional *pun*portunity.
 - provide a checksum when the model is downloaded
 - logging happens in a separate frame
 - gif/vid of Ada, doing the thing
+
+## TODO
+
+- Audit all the agent say calls, to make sure Ada isn't 'talking' when she doesn't need to e.g. help output, menus, code blocks
+- Response objects should have a .body method for all text, then a speakable method for text that should be spoken, again to not read code blocks
+- Think about how to get better phonetic answers, for instance can we return phonemes alongside text in the llm output, could that simply be infered by an llm pass after?
 
 ## Bugs
 

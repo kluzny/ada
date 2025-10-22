@@ -75,6 +75,9 @@ class Agent:
     def say(self, input: str) -> None:
         print(f"{WHOAMI}: {input}")
 
+        if self.config.voice():
+            self.voice.say(input)
+
     async def __switch_persona(self, name: str, looper: Looper) -> bool:
         """
         Switch to a different persona by name.
