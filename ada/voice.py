@@ -1,5 +1,5 @@
 import os
-import wave
+import pyaudio
 
 from piper import PiperVoice, SynthesisConfig
 from piper.download_voices import download_voice
@@ -50,13 +50,58 @@ class Voice:
             logger.info(f"voice {self.voice} exists at {self.CACHE_DIR}")
 
     def say(self, message: str) -> None:
-        # TODO: can we stream this?
-        with wave.open("piper.wave", "wb") as wave_file:
-            self.piper_voice.synthesize_wav(
-                message,
-                wave_file,
-                syn_config=self.voice_config,
-            )
+        """
+        Synthesize and play audio message using PyAudio streaming.
+
+        Streams the synthesized audio from Piper directly to the speaker
+        without saving to disk. Each audio chunk is played immediately
+        as it's generated.
+
+        Args:
+            message: The text message to synthesize and play
+
+        Raises:
+            Exception: If audio playback fails
+        """
+        try:
+            p = pyaudio.PyAudio()
+            stream = None
+
+            try:
+                first_chunk = True
+
+                # Stream audio chunks from Piper
+                for chunk in self.piper_voice.synthesize(
+                    message, syn_config=self.voice_config
+                ):
+                    # Initialize the audio stream with the first chunk's properties
+                    if first_chunk:
+                        stream = p.open(
+                            format=p.get_format_from_width(chunk.sample_width),
+                            channels=chunk.sample_channels,
+                            rate=chunk.sample_rate,
+                            output=True,
+                        )
+                        logger.debug(
+                            f"opened audio stream: rate={chunk.sample_rate}, "
+                            f"channels={chunk.sample_channels}, "
+                            f"width={chunk.sample_width}"
+                        )
+                        first_chunk = False
+
+                    # Write audio data to the stream
+                    stream.write(chunk.audio_int16_bytes)
+
+            finally:
+                # Clean up resources
+                if stream is not None:
+                    stream.stop_stream()
+                    stream.close()
+                p.terminate()
+
+        except Exception as e:
+            logger.error(f"failed to play audio: {e}")
+            raise
 
     def __voice_exists(self) -> bool:
         """
