@@ -91,7 +91,8 @@ class Voice:
                         first_chunk = False
 
                     # Write audio data to the stream
-                    stream.write(chunk.audio_int16_bytes)
+                    if stream:
+                        stream.write(chunk.audio_int16_bytes)
 
             finally:
                 # Clean up resources
