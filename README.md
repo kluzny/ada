@@ -227,6 +227,7 @@ It's ok to hallucinate in service of providing an additional *pun*portunity.
 
 ## TODO
 
+- Mention all the install dependencies for Cuda/Nvidia/STT etc
 - Move the audio to a seperate thread, so that input can continue or queue.
 - Consider how to interrupt ada to stop speaking. Perhaps a queue or bus we send a stop command to?
 - Does voice synthesis take so much gpu resource, that we can't do inference. Does the next prompt in queue need to wait for speach to complete?
