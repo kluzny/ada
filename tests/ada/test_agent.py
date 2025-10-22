@@ -1,7 +1,7 @@
 from ada import Agent
 from ada.config import Config
 
-TEST_CONFIG_PATH = "tests/fixtures/config/example.json"
+TEST_CONFIG_PATH = "tests/fixtures/config/test_runner.json"
 
 
 def test_agent():

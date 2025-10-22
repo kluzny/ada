@@ -8,12 +8,12 @@ from ada.logger import build_logger
 logger = build_logger(__name__)
 
 
-class Voices:
+class Voice:
     CACHE_DIR = "voices"
 
     def __init__(self, voice: str):
         """
-        Initialize Voices with a voice model identifier.
+        Initialize Voice with a voice model identifier.
 
         Args:
             voice: Voice model identifier (e.g., "en_US-amy-medium")
