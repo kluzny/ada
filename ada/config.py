@@ -24,6 +24,17 @@ class Config:
     def history(self) -> bool:
         return "history" in self.loaded and self.loaded["history"]
 
+    def voice(self) -> str | bool:
+        """
+        Get the TTS voice configuration.
+
+        Returns:
+            Voice model string (e.g., "en_US-amy-medium") if present and not blank,
+            otherwise False
+        """
+        tts = self.loaded.get("tts", "")
+        return tts if tts else False
+
     def backend(self) -> str:
         """
         Get the backend from configuration.
