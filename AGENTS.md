@@ -2,6 +2,8 @@
 
 This file provides guidance to agents when working with code in this repository.
 
+**IMPORTANT**: See [agents/rules.md](agents/rules.md) for additional rules that must always be followed when working with this codebase.
+
 ## Project Overview
 
 ADA (Agentic Digital Assistant) is a Python-based LLM agent framework that provides an interactive REPL for conversing with local language models via llama-cpp-python. The project emphasizes modularity through a persona system, extensibility through tools, and hot-reloadable context through memories.
