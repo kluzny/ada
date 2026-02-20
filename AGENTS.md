@@ -6,6 +6,12 @@ This file provides guidance to agents when working with code in this repository.
 
 ADA (Agentic Digital Assistant) is a Python-based LLM agent framework that provides an interactive REPL for conversing with local language models via llama-cpp-python. The project emphasizes modularity through a persona system, extensibility through tools, and hot-reloadable context through memories.
 
+## Project Documentation
+
+- **Implementation Plan**: See [docs/plan.md](docs/plan.md) for the detailed roadmap
+- **Working List**: See [docs/todo.md](docs/todo.md) for current tasks and priorities
+- **Known Issues**: See [docs/bugs.md](docs/bugs.md) for tracked bugs
+
 ## Development Setup
 
 Dependencies are managed with [uv](https://docs.astral.sh/uv/):
