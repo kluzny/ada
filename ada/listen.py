@@ -1,10 +1,16 @@
 import os
+import re
+import time
+
 import numpy as np
 import pyaudio
 from faster_whisper import WhisperModel
 
 from ada.logger import build_logger
 from ada.constants import ARTIFACT_DIR
+from ada.looper import Looper
+
+from asyncio import Queue, run_coroutine_threadsafe, AbstractEventLoop
 
 logger = build_logger(__name__)
 
@@ -110,6 +116,83 @@ class Listen:
             logger.error(f"failed during continuous listening: {e}")
             raise
 
+    WAKE_TIMEOUT: float = 3
+
+    def listen_for_wake_word(
+        self,
+        looper: Looper,
+        word_queue: Queue,
+        chunk_duration: float = 3.0,
+    ) -> None:
+        """
+        Continuously capture and transcribe audio chunks.
+
+        Runs indefinitely, transcribing and printing audio chunks as they're captured.
+        Press Ctrl+C to stop.
+
+        Args:
+            chunk_duration: Duration of each chunk in seconds (default: 3.0)
+        """
+
+        # TODO: there are three cases for each iteration
+        # Partial start Ada: Do the....
+        # Partial end   .... is doing the thing STOP
+        # Full Ada: do the thing STOP
+
+        try:
+            wake_word: str = "ada"
+            stop_word: str = "stop"
+
+            wake_timer: float = time.time()
+
+            phrase: str = ""
+            while True:
+                text = self.listen_chunk(chunk_duration)
+                if text.strip():
+                    logger.debug(f"[whisper] {text}")
+
+                    if len(phrase) == 0:
+                        # if the text matches wake word "ada" start pushing words into the phrase
+                        matches = re.search(rf"\b{wake_word}\b", text, re.IGNORECASE)
+                        if matches is not None:
+                            wake_timer = time.time()
+                            logger.debug(f"heard wake word {wake_word}")
+                            (start, end) = matches.span()
+                            phrase += f" {text[end:]}"
+                            logger.warning(f"updating phrase: {phrase}")
+                            logger.warning(f"starting wake timer {wake_timer}")
+
+                    if len(phrase) > 0:
+                        logger.warning(f"gogogo: {phrase}")
+                        # if the text matches "fullstop" stop
+                        matches = re.search(rf"\b{stop_word}\b", text, re.IGNORECASE)
+                        # if elapsed time is greater then 3s without new words stop
+                        elapsed_time = time.time() - wake_timer
+                        if matches is not None or elapsed_time > self.WAKE_TIMEOUT:
+                            if matches is not None:
+                                logger.warning(f"staaahp: {phrase}")
+                                (start, end) = matches.span()
+                                phrase += f" {text[:start]}"
+                            else:
+                                phrase += f" {text}"
+
+                            run_coroutine_threadsafe(
+                                word_queue.put(item=(phrase)), loop=looper.loop
+                            )
+
+                            phrase = ""
+                        else:
+                            if len(text) > 0:
+                                phrase += f" {text}"
+                                wake_timer = time.time()
+                                logger.warning(f"reset wake timer {wake_timer}")
+
+        except KeyboardInterrupt:
+            logger.info("continuous listening stopped")
+        except Exception as e:
+            logger.error(f"failed during continuous listening: {e}")
+            raise
+
     def __prepare(self) -> None:
         """Prepare the models directory for whisper model caching."""
         os.makedirs(self.CACHE_DIR, exist_ok=True)
@@ -140,18 +223,18 @@ class Listen:
                 frames_per_buffer=self.DEFAULT_CHUNK_SIZE,
             )
 
-            logger.debug(
-                f"opened audio stream: rate={self.DEFAULT_SAMPLE_RATE}, "
-                f"channels={self.DEFAULT_CHANNELS}, "
-                f"format={self.DEFAULT_FORMAT}"
-            )
+            # logger.debug(
+            #     f"opened audio stream: rate={self.DEFAULT_SAMPLE_RATE}, "
+            #     f"channels={self.DEFAULT_CHANNELS}, "
+            #     f"format={self.DEFAULT_FORMAT}"
+            # )
 
             frames = []
             num_frames = int(
                 self.DEFAULT_SAMPLE_RATE / self.DEFAULT_CHUNK_SIZE * duration
             )
 
-            logger.debug(f"capturing {duration}s of audio ({num_frames} frames)")
+            # logger.debug(f"capturing {duration}s of audio ({num_frames} frames)")
 
             for i in range(num_frames):
                 try:
@@ -167,7 +250,7 @@ class Listen:
             audio_data = (
                 np.concatenate(frames) if frames else np.array([], dtype=np.float32)
             )
-            logger.debug(f"captured {len(audio_data)} samples")
+            # logger.debug(f"captured {len(audio_data)} samples")
 
             return audio_data
 
@@ -191,7 +274,7 @@ class Listen:
             Exception: If transcription fails
         """
         try:
-            logger.debug(f"transcribing {len(audio_data)} samples")
+            # logger.debug(f"transcribing {len(audio_data)} samples")
 
             # Ensure audio is mono and float32
             if audio_data.ndim > 1:
@@ -208,7 +291,7 @@ class Listen:
             # Collect all segments into a single text
             text = "".join([segment.text for segment in segments]).strip()
 
-            logger.debug(f"transcription complete: {text[:100]}")
+            # logger.debug(f"transcription complete: {text[:100]}")
 
             return text
 

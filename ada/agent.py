@@ -17,6 +17,7 @@ from ada.looper import Looper
 from ada.formatter import block
 from ada.backends import Base as Backend, LlamaCppBackend, OllamaBackend
 from ada.voice import Voice
+from ada.listen import Listen
 
 
 WHOAMI = "ADA"
@@ -43,6 +44,10 @@ class Agent:
         if config.voice():
             self.voice = Voice(config.voice())  # pyright: ignore[reportArgumentType] not bool under if
             self.voice.say("Hello World!")
+
+        if config.listen():
+            self.listen = Listen(config.listen())  # pyright: ignore[reportArgumentType] not bool under if
+
         self.__init_prompt(config)
 
     def __init_prompt(self, config: Config) -> None:
@@ -55,12 +60,26 @@ class Agent:
 
     async def run(self, loop: AbstractEventLoop) -> None:
         logger.info("running")
+
+        # TODO: move this queue to __init__
+        self.word_queue = Queue()
+
         try:
             async with TaskGroup() as tg:
                 looper = Looper(tg=tg, loop=loop, queue=Queue())
                 self.__swap_persona(looper, Personas.DEFAULT)
                 tg.create_task(self.__event_consumer(looper.queue))
+                tg.create_task(self.__word_consumer(self.word_queue))
                 tg.create_task(self.__chat(looper))
+                tg.create_task(
+                    to_thread(
+                        lambda: self.listen.listen_for_wake_word(
+                            chunk_duration=3.0,
+                            looper=looper,
+                            word_queue=self.word_queue,
+                        )
+                    )
+                )
 
             self.persona.unwatch()  # TODO: can we auto clean this up
         except ExceptionGroup as eg:
@@ -242,6 +261,13 @@ class Agent:
 
         self.conversation.append_response(WHOAMI, response)
         self.say(response.body)
+
+    # TODO: make this good
+    async def __word_consumer(self, queue: Queue):
+        while True:
+            text = await queue.get()
+            if text:
+                print(f"RECV: {text}")
 
     async def __event_consumer(self, queue: Queue):
         """Consumes file system events."""
