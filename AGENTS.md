@@ -15,126 +15,6 @@ ADA (Agentic Digital Assistant) is a Python-based LLM agent framework that provi
 - **Working List**: See [docs/todo.md](docs/todo.md) for current tasks and priorities
 - **Known Issues**: See [docs/bugs.md](docs/bugs.md) for tracked bugs
 
-## Development Setup
-
-Dependencies are managed with [uv](https://docs.astral.sh/uv/):
-
-```bash
-# Initial setup
-uv venv                    # create virtual environment
-uv sync                    # install dependencies
-cp -pv config.json.example config.json
-
-# Development commands
-make test                  # run all tests
-make lint                  # format and fix issues (runs both format and fix)
-make format                # format code with ruff
-make fix                   # fix linting issues with ruff
-make check                 # run lint + test
-pytest                     # run all tests
-pytest tests/ada/test_agent.py  # run specific test file
-pytest tests/ada/test_agent.py::test_agent_say  # run single test function
-pytest -v                  # run tests with verbose output
-pytest -k "test_name"      # run tests matching pattern
-make clean                 # remove conversations and logs
-make purge                 # clean + remove downloaded models
-
-# Running
-python main.py             # start the interactive REPL
-```
-
-### Make Commands Quick Reference
-
-| Command | Description |
-|---------|-------------|
-| `make test` | Run all tests with pytest |
-| `make format` | Format code with ruff |
-| `make fix` | Auto-fix linting issues with ruff |
-| `make lint` | Run both format and fix |
-| `make check` | Run lint + test |
-| `make clean` | Remove conversations and logs |
-| `make purge` | Clean + remove downloaded models |
-
-The project uses an environment variable `APP_ENV=test` for testing (configured in pyproject.toml).
-
-For GPU inference with CUDA (llama-cpp-python only):
-```bash
-CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --verbose
-```
-
-## Artifact Storage
-
-ADA uses a `.ada/` directory (defined in `ada/constants.py` as `ARTIFACT_DIR`) for caching downloaded artifacts:
-
-- `.ada/llms/` - Downloaded GGUF model files (llama-cpp backend)
-- `.ada/voices/` - Downloaded TTS voice models (Piper TTS)
-
-This directory is separate from:
-- `conversations/` - Saved conversation JSON files
-- `logs/` - Application log files
-- `memories/` - Persona-specific context files
-
-**Important**: The `.ada/` directory is created automatically and should be added to `.gitignore` to avoid committing large model files.
-
-## Backend Configuration
-
-ADA supports two LLM backends: **llama-cpp-python** (local GGUF models) and **Ollama** (local model serving).
-
-Configuration uses a `backend` key to select the active backend and a `backends` object containing backend-specific settings.
-
-### Configuration Structure
-
-Example `config.json` with both backends configured:
-```json
-{
-  "log_level": "DEBUG",
-  "record": true,
-  "history": true,
-  "backend": "llama-cpp",
-  "backends": {
-    "llama-cpp": {
-      "model": "phi-2",
-      "threads": 4,
-      "verbose": false,
-      "models": [
-        {
-          "name": "phi-2",
-          "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf"
-        }
-      ]
-    },
-    "ollama": {
-      "url": "http://localhost:11434",
-      "model": "llama3.2"
-    }
-  }
-}
-```
-
-### llama-cpp-python Backend
-
-Runs GGUF models directly using llama.cpp. Models are automatically downloaded and cached in `.ada/llms/` directory.
-Context window size is automatically detected from the GGUF model metadata.
-
-**Configuration keys:**
-- `model`: Name of the model to use (references a model in the `models` array)
-- `models`: Array of model definitions with:
-  - `name`: Identifier for the model
-  - `url`: Download URL for the GGUF file
-- `threads`: Number of CPU threads (optional, default: 1)
-- `verbose`: Enable verbose llama.cpp output (optional, default: false)
-
-### Ollama Backend
-
-Connects to a running Ollama instance. Requires Ollama to be installed and running separately (`ollama serve`).
-Context window size is automatically detected from the Ollama model metadata.
-
-**Configuration keys:**
-- `url`: Ollama server URL (default: http://localhost:11434)
-- `model`: Name of the Ollama model (e.g., "llama2", "llama3.2", "mistral")
-
-**To switch backends:** Change the top-level `backend` key to either `"llama-cpp"` or `"ollama"`.
-
 ## Architecture
 
 ### Core Components
@@ -230,13 +110,66 @@ logs/              # Application logs
 tests/             # Test suite mirrors ada/ structure
 ```
 
-## Testing
+## Development Setup
 
-- Python 3.13+ required
-- Tests use pytest with APP_ENV=test environment variable
-- Test fixtures in `tests/helpers/fixtures.py`
-- Tests mirror the source structure under `tests/ada/`
-- See [agents/rules.md](agents/rules.md) for testing rules and best practices
+Dependencies are managed with [uv](https://docs.astral.sh/uv/):
+
+```bash
+# Initial setup
+uv venv                    # create virtual environment
+uv sync                    # install dependencies
+cp -pv config.json.example config.json
+
+# Development commands
+make test                  # run all tests
+make lint                  # format and fix issues (runs both format and fix)
+make format                # format code with ruff
+make fix                   # fix linting issues with ruff
+make check                 # run lint + test
+pytest                     # run all tests
+pytest tests/ada/test_agent.py  # run specific test file
+pytest tests/ada/test_agent.py::test_agent_say  # run single test function
+pytest -v                  # run tests with verbose output
+pytest -k "test_name"      # run tests matching pattern
+make clean                 # remove conversations and logs
+make purge                 # clean + remove downloaded models
+
+# Running
+python main.py             # start the interactive REPL
+```
+
+### Make Commands Quick Reference
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Run all tests with pytest |
+| `make format` | Format code with ruff |
+| `make fix` | Auto-fix linting issues with ruff |
+| `make lint` | Run both format and fix |
+| `make check` | Run lint + test |
+| `make clean` | Remove conversations and logs |
+| `make purge` | Clean + remove downloaded models |
+
+The project uses an environment variable `APP_ENV=test` for testing (configured in pyproject.toml).
+
+For GPU inference with CUDA (llama-cpp-python only):
+```bash
+CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --verbose
+```
+
+## Artifact Storage
+
+ADA uses a `.ada/` directory (defined in `ada/constants.py` as `ARTIFACT_DIR`) for caching downloaded artifacts:
+
+- `.ada/llms/` - Downloaded GGUF model files (llama-cpp backend)
+- `.ada/voices/` - Downloaded TTS voice models (Piper TTS)
+
+This directory is separate from:
+- `conversations/` - Saved conversation JSON files
+- `logs/` - Application log files
+- `memories/` - Persona-specific context files
+
+**Important**: The `.ada/` directory is created automatically and should be added to `.gitignore` to avoid committing large model files.
 
 ## Configuration
 
@@ -248,17 +181,72 @@ Edit `config.json` to customize:
 - `history`: true/false for input history across sessions
 - `backend`: "llama-cpp" or "ollama" - selects which backend to use
 
-**Backend-specific settings (under `backends` object):**
+### Backend Configuration
 
-For `llama-cpp`:
-- `model`: Name of model to use from the `models` array
-- `models`: Array of model definitions with `name` and `url`
+ADA supports two LLM backends: **llama-cpp-python** (local GGUF models) and **Ollama** (local model serving).
+
+Configuration uses a `backend` key to select the active backend and a `backends` object containing backend-specific settings.
+
+#### Configuration Structure
+
+Example `config.json` with both backends configured:
+```json
+{
+  "log_level": "DEBUG",
+  "record": true,
+  "history": true,
+  "backend": "llama-cpp",
+  "backends": {
+    "llama-cpp": {
+      "model": "phi-2",
+      "threads": 4,
+      "verbose": false,
+      "models": [
+        {
+          "name": "phi-2",
+          "url": "https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q8_0.gguf"
+        }
+      ]
+    },
+    "ollama": {
+      "url": "http://localhost:11434",
+      "model": "llama3.2"
+    }
+  }
+}
+```
+
+#### llama-cpp-python Backend
+
+Runs GGUF models directly using llama.cpp. Models are automatically downloaded and cached in `.ada/llms/` directory.
+Context window size is automatically detected from the GGUF model metadata.
+
+**Configuration keys:**
+- `model`: Name of the model to use (references a model in the `models` array)
+- `models`: Array of model definitions with:
+  - `name`: Identifier for the model
+  - `url`: Download URL for the GGUF file
 - `threads`: Number of CPU threads (optional, default: 1)
-- `verbose`: Enable verbose output (optional, default: false)
+- `verbose`: Enable verbose llama.cpp output (optional, default: false)
 
-For `ollama`:
-- `url`: Ollama server URL (optional, default: http://localhost:11434)
+#### Ollama Backend
+
+Connects to a running Ollama instance. Requires Ollama to be installed and running separately (`ollama serve`).
+Context window size is automatically detected from the Ollama model metadata.
+
+**Configuration keys:**
+- `url`: Ollama server URL (default: http://localhost:11434)
 - `model`: Name of the Ollama model (e.g., "llama2", "llama3.2", "mistral")
+
+**To switch backends:** Change the top-level `backend` key to either `"llama-cpp"` or `"ollama"`.
+
+## Testing
+
+- Python 3.13+ required
+- Tests use pytest with APP_ENV=test environment variable
+- Test fixtures in `tests/helpers/fixtures.py`
+- Tests mirror the source structure under `tests/ada/`
+- See [agents/rules.md](agents/rules.md) for testing rules and best practices
 
 ## Tool System
 
