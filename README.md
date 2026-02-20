@@ -33,7 +33,7 @@ The **llama-cpp** backend runs quantized GGUF models locally using [llama-cpp-py
 **Features:**
 
 - Runs models locally without internet connection (after initial download)
-- Automatic model download and caching to `models/` directory
+- Automatic model download and caching to `.ada/llms/` directory
 - Support for CPU and GPU inference (with CUDA/Metal/etc.)
 - Dynamic context window detection from GGUF metadata
 - No external service dependencies
@@ -162,7 +162,7 @@ ADA includes integrated text-to-speech capabilities powered by [Piper TTS](https
 - Streaming audio directly to speakers (no disk files)
 - Real-time playback as audio is generated
 - Extensive voice model library with multiple languages and genders
-- Automatic model download and caching to `voices/` directory
+- Automatic model download and caching to `.ada/voices/` directory
 - Fully offline operation (after initial voice model download)
 
 **Configuration:**

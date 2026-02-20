@@ -7,12 +7,13 @@ from piper.download_voices import download_voice
 from pathlib import Path
 
 from ada.logger import build_logger
+from ada.constants import ARTIFACT_DIR
 
 logger = build_logger(__name__)
 
 
 class Voice:
-    CACHE_DIR = "voices"
+    CACHE_DIR = ARTIFACT_DIR / "voices"
 
     def __init__(self, voice: str):
         """
