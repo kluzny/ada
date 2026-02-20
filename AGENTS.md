@@ -2,7 +2,8 @@
 
 This file provides guidance to agents when working with code in this repository.
 
-**IMPORTANT**: Read [agents/rules.md](agents/rules.md) immediatley for additional rules that must always be followed when working with this codebase.
+**IMPORTANT** Read [agents/rules.md](agents/rules.md) immediatley for additional rules that must always be followed when working with this codebase.
+**IMPORTANT** Read [agents/style.md](agents/style.md) when producing source code for style, formatting and linting guidelines.
 
 ## Project Overview
 
@@ -42,6 +43,18 @@ make purge                 # clean + remove downloaded models
 python main.py             # start the interactive REPL
 ```
 
+### Make Commands Quick Reference
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Run all tests with pytest |
+| `make format` | Format code with ruff |
+| `make fix` | Auto-fix linting issues with ruff |
+| `make lint` | Run both format and fix |
+| `make check` | Run lint + test |
+| `make clean` | Remove conversations and logs |
+| `make purge` | Clean + remove downloaded models |
+
 The project uses an environment variable `APP_ENV=test` for testing (configured in pyproject.toml).
 
 For GPU inference with CUDA (llama-cpp-python only):
@@ -49,9 +62,19 @@ For GPU inference with CUDA (llama-cpp-python only):
 CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --verbose
 ```
 
-## Code Style Guidelines
+## Artifact Storage
 
-For detailed coding style, formatting, and linting guidelines, see [agents/style.md](agents/style.md).
+ADA uses a `.ada/` directory (defined in `ada/constants.py` as `ARTIFACT_DIR`) for caching downloaded artifacts:
+
+- `.ada/llms/` - Downloaded GGUF model files (llama-cpp backend)
+- `.ada/voices/` - Downloaded TTS voice models (Piper TTS)
+
+This directory is separate from:
+- `conversations/` - Saved conversation JSON files
+- `logs/` - Application log files
+- `memories/` - Persona-specific context files
+
+**Important**: The `.ada/` directory is created automatically and should be added to `.gitignore` to avoid committing large model files.
 
 ## Backend Configuration
 
@@ -90,7 +113,7 @@ Example `config.json` with both backends configured:
 
 ### llama-cpp-python Backend
 
-Runs GGUF models directly using llama.cpp. Models are automatically downloaded and cached in `models/` directory.
+Runs GGUF models directly using llama.cpp. Models are automatically downloaded and cached in `.ada/llms/` directory.
 Context window size is automatically detected from the GGUF model metadata.
 
 **Configuration keys:**
@@ -128,7 +151,9 @@ Context window size is automatically detected from the Ollama model metadata.
 - Built-in personas: `default` (standard assistant), `jester` (responds in rhyme/jokes/pig-latin)
 - Supports hot-reloadable "memories" - context files in `memories/[persona_name]/` loaded alphabetically
 - Memories are wrapped in `<memory></memory>` tags and injected into system prompts
-- File watcher automatically rebuilds persona when memory files change
+- File watcher (watchdog) automatically detects changes and triggers persona rebuild
+- Hot-reload applies immediately without restarting the REPL or losing conversation state
+- Changes typically detected within 1-2 seconds of file modification
 
 **Conversation (ada/conversation.py)**
 - Tracks conversation history as a list of Entry objects
@@ -137,7 +162,7 @@ Context window size is automatically detected from the Ollama model metadata.
 
 **Model (ada/model.py)**
 - Handles downloading and caching GGUF models from URLs
-- Downloads to `models/` directory with progress bar
+- Downloads to `.ada/llms/` directory with progress bar
 - Model is configured via config.json (url and token context length)
 
 **ToolBox (ada/tool_box.py, ada/tools/)**
@@ -157,6 +182,12 @@ Context window size is automatically detected from the Ollama model metadata.
 - **OllamaBackend** - Connects to Ollama server for model inference
 - Backends are selected in config.json via the `backend` field
 - All backends return OpenAI-compatible response format for consistency
+
+**Core Data Models (Pydantic)**
+- **Entry** (ada/entry.py) - Individual conversation entries with author and body fields
+- **Response** (ada/response.py) - LLM response structure with optional text/code fields
+- **Looper** (ada/looper.py) - Container for asyncio primitives (TaskGroup, EventLoop, Queue)
+- **Conversation** (ada/conversation.py) - Manages list of Entry objects with message formatting
 
 ### Key Patterns
 
@@ -192,7 +223,9 @@ memories/           # Persona-specific context files
   [persona_name]/
     001_*.txt       # Loaded alphabetically
 conversations/      # Saved conversation JSON files
-models/            # Cached GGUF model files (llama-cpp only)
+.ada/              # Artifact cache directory (auto-created)
+  llms/            # Cached GGUF model files (llama-cpp only)
+  voices/          # Cached TTS voice models (Piper)
 logs/              # Application logs
 tests/             # Test suite mirrors ada/ structure
 ```
@@ -226,3 +259,58 @@ For `llama-cpp`:
 For `ollama`:
 - `url`: Ollama server URL (optional, default: http://localhost:11434)
 - `model`: Name of the Ollama model (e.g., "llama2", "llama3.2", "mistral")
+
+## Tool System
+
+### Tool Calling Flow
+
+The tool system enables LLMs to call Python functions through a structured workflow:
+
+1. **Tool Registration**: Tools are discovered and registered in `ToolBox.AVAILABLE_TOOLS` list
+2. **LLM receives tools**: During chat completion, available tools are passed to the backend
+3. **LLM requests tool call**: LLM includes tool call in response (OpenAI format)
+4. **Agent executes tool**: Agent parses tool call and invokes the appropriate tool's `call()` method
+5. **Result returned to LLM**: Tool output is formatted and added to conversation history
+
+### Adding a New Tool
+
+1. Create a new file in `ada/tools/` (e.g., `ada/tools/my_tool.py`)
+2. Inherit from `ada.tools.Base` abstract class
+3. Implement required methods:
+   - `name` property: Unique tool identifier
+   - `description` property: What the tool does (used by LLM)
+   - `parameters` property: JSON schema defining expected arguments
+   - `call()` method: Tool implementation that accepts `**kwargs`
+4. Register in `ada/tool_box.py` by adding to `ToolBox.AVAILABLE_TOOLS` list
+
+**Example tool structure:**
+```python
+from ada.tools.base import Base
+from typing import Any
+
+class MyTool(Base):
+    @property
+    def name(self) -> str:
+        return "my_tool"
+    
+    @property
+    def description(self) -> str:
+        return "Does something useful"
+    
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "arg_name": {"type": "string", "description": "What this arg does"}
+            },
+            "required": ["arg_name"]
+        }
+    
+    def call(self, **kwargs) -> Any:
+        arg_value = kwargs.get("arg_name")
+        # Tool implementation here
+        return {"result": "success"}
+```
+
+See `ada/tools/example.py` for a complete reference implementation.
