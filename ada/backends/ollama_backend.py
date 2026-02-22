@@ -182,41 +182,6 @@ class OllamaBackend(Base):
             },
         }
 
-    @staticmethod
-    def is_available(url: str = "http://localhost:11434") -> bool:
-        """
-        Check whether an Ollama server is reachable.
-
-        Args:
-            url: Ollama server URL to probe
-
-        Returns:
-            True if the server responds, False otherwise
-        """
-        try:
-            ollama.Client(host=url).list()
-            return True
-        except Exception:
-            return False
-
-    @staticmethod
-    def is_model_available(model: str, url: str = "http://localhost:11434") -> bool:
-        """
-        Check whether a specific model is available on the Ollama server.
-
-        Args:
-            model: Model name to look for
-            url: Ollama server URL to probe
-
-        Returns:
-            True if the model is present, False otherwise
-        """
-        try:
-            models = ollama.Client(host=url).list()
-            return model in [m["name"] for m in models.get("models", [])]
-        except Exception:
-            return False
-
     def current_model(self) -> str:
         """
         Get the name of the currently active model.
@@ -280,3 +245,38 @@ class OllamaBackend(Base):
 
     def __str__(self) -> str:
         return f"OllamaBackend(model={self.model_name}, url={self.url})"
+
+    @staticmethod
+    def is_available(url: str) -> bool:
+        """
+        Check whether an Ollama server is reachable.
+
+        Args:
+            url: Ollama server URL to probe
+
+        Returns:
+            True if the server responds, False otherwise
+        """
+        try:
+            ollama.Client(host=url).list()
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def is_model_available(model: str, url: str) -> bool:
+        """
+        Check whether a specific model is available on the Ollama server.
+
+        Args:
+            model: Model name to look for
+            url: Ollama server URL to probe
+
+        Returns:
+            True if the model is present, False otherwise
+        """
+        try:
+            models = ollama.Client(host=url).list()
+            return model in [m["name"] for m in models.get("models", [])]
+        except Exception:
+            return False
