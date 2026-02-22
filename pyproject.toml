@@ -35,3 +35,6 @@ pythonpath = [
 env = [
     "APP_ENV = test"
 ]
+markers = [
+    "ollama: mark test as requiring a live Ollama instance; optionally specify model='name' to also require that model be present",
+]

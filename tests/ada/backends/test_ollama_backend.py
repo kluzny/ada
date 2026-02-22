@@ -235,6 +235,7 @@ def test_str_representation(sample_config, mock_ollama_client):
     assert "http://localhost:11434" in str(backend)
 
 
+@pytest.mark.ollama(model="gpt-oss:20b")
 def test_chat_completion_with_gpt_oss():
     """Test chat_completion with gpt-oss model without mocks."""
     config = {
@@ -264,6 +265,7 @@ def test_chat_completion_with_gpt_oss():
     assert "total_tokens" in response["usage"]
 
 
+@pytest.mark.ollama(model="gpt-oss:20b")
 def test_context_window_with_gpt_oss():
     """Test context_window retrieves value from Ollama model metadata."""
     config = {
